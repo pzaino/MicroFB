@@ -1,0 +1,66 @@
+/*
+ * This file is part of: 
+ *      MicroFB, a minimal framebuffer library for RISC OS
+ *
+ * Description: 
+ *      This project aims to provide a simple and efficient way to manage
+ *      the framebuffer on RISC OS using C++11. It abstracts the direct 
+ *      interaction with the GraphicsV API, offering a higher-level 
+ *      interface for drawing operations and framebuffer manipulation.
+ *
+ * Author:
+ *     Paolo Fabio Zaino, all rights reserved.
+ * Distributed under License: 
+ *      CDDL v1.1 (Common Development and Distribution License Version 
+ *      1.1) The use of this project is subject to the terms of the 
+ *      CDDL v1.1. This project can be used and distributed according 
+ *      to the terms of this license. For details on the CDDL v1.1, 
+ *      please refer to the official license documentation.
+ */
+
+#ifndef FB_HPP
+#define FB_HPP
+
+#include <vector>
+#include <cstdint> // For standard integer types
+
+typedef uint32_t color_t; // 32-bit color
+typedef uint32_t pixel_t; // 32-bit pixel
+
+class FrameBuffer {
+public:
+    FrameBuffer(pixel_t width, pixel_t height); // Constructor
+    ~FrameBuffer(); // Destructor for cleanup
+
+    void initialize(const char* fbDevicePath); // Initialize framebuffer device
+    void close(); // Close framebuffer device
+
+    pixel_t getWidth() const; // Get the framebuffer's width
+    pixel_t getHeight() const; // Get the framebuffer's height
+
+    void setPixel(pixel_t x, pixel_t y, color_t color); // Set a pixel's color
+    color_t getPixel(pixel_t x, pixel_t y) const; // Get a pixel's color
+
+    void clear(color_t color = 0); // Clear the framebuffer with a specific color
+
+    // Add methods for drawing shapes, images, etc.
+    void drawPoint(pixel_t x, pixel_t y, color_t color); // Draw a point
+    void drawLine(pixel_t x1, pixel_t y1, pixel_t x2, pixel_t y2, color_t color); // Draw a line
+    void drawRectangle(pixel_t x, pixel_t y, pixel_t width, pixel_t height, color_t color); // Draw a rectangle
+    void drawCircle(pixel_t x, pixel_t y, pixel_t radius, color_t color); // Draw a circle
+    void drawEllipse(pixel_t x, pixel_t y, pixel_t xRadius, pixel_t yRadius, color_t color); // Draw an ellipse
+    void drawTriangle(pixel_t x1, pixel_t y1, pixel_t x2, pixel_t y2, pixel_t x3, pixel_t y3, color_t color); // Draw a triangle
+    void drawPolygon(const std::vector<pixel_t>& xCoords, const std::vector<pixel_t>& yCoords, color_t color); // Draw a polygon
+    void drawImage(const std::vector<color_t>& image, pixel_t x, pixel_t y, pixel_t width, pixel_t height); // Draw an image
+
+    // TODO: Add methods for drawing text, etc.
+
+    // TODO: Add methods for handling input, etc.
+
+private:
+    pixel_t width_, height_;
+    std::vector<color_t> buffer_; // 32 bits per pixel (e.g., 8 bits for RGBA channels)
+    int fbFd_; // File descriptor for the framebuffer device
+};
+
+#endif // FB_HPP
