@@ -25,20 +25,22 @@
 #include <cstdint>
 #include <memory> // For std::shared_ptr
 
+#include "mem_manager.hpp"
 #include "render_strategy.hpp"
 
 typedef uint32_t color_t; // 32-bit color
 typedef uint32_t pixel_t; // 32-bit pixel, assuming it represents dimensions
 
 class Layer {
-private:
+  private:
     std::shared_ptr<RenderStrategy> currentRenderStrategy;
 
-public:
-    std::vector<color_t> pixels; // Pixel data for this layer
-    float opacity; // Layer opacity
-    bool visible; // Layer visibility
-    pixel_t width, height; // Dimensions of the layer
+  public:
+    color_t* pixels; // The actual layer is defined by MemoryManager interface
+    float opacity;   // Layer opacity
+    bool visible;    // Layer visibility
+    pixel_t width;   // horizontal dimension of the layer
+    pixel_t height;  // vertical dimension of the layer
 
     // Constructor and destructor
     Layer(pixel_t width, pixel_t height, std::shared_ptr<RenderStrategy> strategy);

@@ -18,12 +18,18 @@
  *      please refer to the official license documentation.
  */
 
+#include <memory> // For std::shared_ptr
+
+#include "mem_manager.hpp"
 #include "layer.hpp"
 
 // Constructor implementation
 Layer::Layer(pixel_t width, pixel_t height, std::shared_ptr<RenderStrategy> strategy)
     : width(width), height(height), opacity(1.0f), visible(true), currentRenderStrategy(strategy) {
-    pixels.resize(width * height, 0); // Initialize pixel buffer with default color (0)
+        
+    // Initialize pixel buffer with default color (0)
+    pixels = static_cast<color_t*>(memoryManager->allocate(width * height * sizeof(color_t))); 
+    
 }
 
 // Destructor implementation
