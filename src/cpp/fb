@@ -19,7 +19,7 @@
  */
 
 #include "fb.hpp"
-#include "layer.hpp" // Ensure this is included if not already included in fb.hpp
+#include "layer.hpp" 
 
 // Constructor
 FrameBuffer::FrameBuffer(unsigned int width, unsigned int height, std::shared_ptr<RenderStrategy> strategy)
@@ -28,7 +28,6 @@ FrameBuffer::FrameBuffer(unsigned int width, unsigned int height, std::shared_pt
 // Add a layer to the framebuffer
 void FrameBuffer::addLayer(const Layer& layer) {
     layers.push_back(layer);
-    // Assuming Layer copy constructor or assignment operator handles the strategy correctly
 }
 
 // Remove a layer from the framebuffer by index
@@ -58,7 +57,6 @@ void FrameBuffer::setRenderStrategy(std::shared_ptr<RenderStrategy> strategy) {
 
 // Placeholder for the actual implementation of merging all layers
 void FrameBuffer::mergeLayers() {
-    // Implementation depends on how you want to combine the layers
     // This could involve blending pixels from each layer based on their opacity,
     // and visibility, or simply stacking them in order.
     // For simplicity, we're not providing a specific implementation here.

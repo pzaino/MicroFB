@@ -28,7 +28,7 @@ Layer::Layer(pixel_t width, pixel_t height, std::shared_ptr<RenderStrategy> stra
 
 // Destructor implementation
 Layer::~Layer() {
-    // No manual resource management needed here due to use of smart pointers and vectors
+    // Not much for now
 }
 
 // Clear the layer with a specific color
@@ -41,12 +41,12 @@ void Layer::setPixel(pixel_t x, pixel_t y, color_t color) {
     currentRenderStrategy->setPixel(pixels, x, y, color); // Use the render strategy to set the pixel
 }
 
-// Draw a line (placeholder for actual line drawing algorithm, e.g., Bresenham's)
+// Draw a line
 void Layer::drawLine(pixel_t x1, pixel_t y1, pixel_t x2, pixel_t y2, color_t color) {
     currentRenderStrategy->drawLine(pixels, x1, y1, x2, y2, color); // Use the render strategy to draw the line
 }
 
-// Draw a rectangle (simple example)
+// Draw a rectangle
 void Layer::drawRect(pixel_t x, pixel_t y, pixel_t w, pixel_t h, color_t color) {
     currentRenderStrategy->drawRect(pixels, x, y, w, h, color); // Use the render strategy to draw the rectangle
 }
