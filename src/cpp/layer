@@ -33,71 +33,65 @@ Layer::~Layer() {
 
 // Clear the layer with a specific color
 void Layer::clear(color_t color) {
-    std::fill(pixels.begin(), pixels.end(), color);
+   currentRenderStrategy->clear(pixels, color); // Use the render strategy to clear the layer
 }
 
 // Direct pixel manipulation
 void Layer::setPixel(pixel_t x, pixel_t y, color_t color) {
-    if (x < width && y < height) {
-        pixels[y * width + x] = color;
-    }
+    currentRenderStrategy->setPixel(pixels, x, y, color); // Use the render strategy to set the pixel
 }
 
 // Draw a line (placeholder for actual line drawing algorithm, e.g., Bresenham's)
 void Layer::drawLine(pixel_t x1, pixel_t y1, pixel_t x2, pixel_t y2, color_t color) {
-    // Implementation of a line drawing algorithm goes here
+    currentRenderStrategy->drawLine(pixels, x1, y1, x2, y2, color); // Use the render strategy to draw the line
 }
 
 // Draw a rectangle (simple example)
 void Layer::drawRect(pixel_t x, pixel_t y, pixel_t w, pixel_t h, color_t color) {
-    for (pixel_t i = x; i < x + w; ++i) {
-        for (pixel_t j = y; j < y + h; ++j) {
-            setPixel(i, j, color);
-        }
-    }
+    currentRenderStrategy->drawRect(pixels, x, y, w, h, color); // Use the render strategy to draw the rectangle
 }
 
 // Fill a rectangle
 void Layer::fillRect(pixel_t x, pixel_t y, pixel_t w, pixel_t h, color_t color) {
-    drawRect(x, y, w, h, color); // For simplicity, just using drawRect here
+    currentRenderStrategy->fillRect(pixels, x, y, w, h, color); // Use the render strategy to fill the rectangle
 }
 
-// Draw a circle (placeholder)
+// Draw a circle 
 void Layer::drawCircle(pixel_t x, pixel_t y, pixel_t r, color_t color) {
-    // Placeholder for circle drawing algorithm
+    currentRenderStrategy->drawCircle(pixels, x, y, r, color); // Use the render strategy to draw the circle
 }
 
-// Fill a circle (placeholder)
+// Fill a circle 
 void Layer::fillCircle(pixel_t x, pixel_t y, pixel_t r, color_t color) {
-    // Placeholder for filled circle algorithm
+    currentRenderStrategy->fillCircle(pixels, x, y, r, color); // Use the render strategy to fill the circle
 }
 
-// Draw an ellipse (placeholder)
+// Draw an ellipse 
 void Layer::drawEllipse(pixel_t x, pixel_t y, pixel_t rx, pixel_t ry, color_t color) {
-    // Placeholder for ellipse drawing algorithm
+    currentRenderStrategy->drawEllipse(pixels, x, y, rx, ry, color); // Use the render strategy to draw the ellipse
 }
 
-// Fill an ellipse (placeholder)
+// Fill an ellipse 
 void Layer::fillEllipse(pixel_t x, pixel_t y, pixel_t rx, pixel_t ry, color_t color) {
-    // Placeholder for filled ellipse algorithm
+    currentRenderStrategy->fillEllipse(pixels, x, y, rx, ry, color); // Use the render strategy to fill the ellipse
 }
 
-// Draw a polygon (placeholder)
+// Draw a polygon 
 void Layer::drawPolygon(const std::vector<pixel_t>& points, color_t color) {
-    // Placeholder for polygon drawing algorithm
+    currentRenderStrategy->drawPolygon(pixels, points, color); // Use the render strategy to draw the polygon
 }
 
-// Fill a polygon (placeholder)
+// Fill a polygon 
 void Layer::fillPolygon(const std::vector<pixel_t>& points, color_t color) {
-    // Placeholder for filled polygon algorithm
+    currentRenderStrategy->fillPolygon(pixels, points, color); // Use the render strategy to fill the polygon
 }
 
-// Draw text (placeholder)
+// Draw text 
 void Layer::drawText(pixel_t x, pixel_t y, const char* text, color_t color) {
-    // Placeholder for text drawing algorithm
+    currentRenderStrategy->drawText(pixels, x, y, text, color); // Use the render strategy to draw the text
 }
 
-// Draw an image (placeholder)
+// Draw an image 
 void Layer::drawImage(pixel_t x, pixel_t y, const Layer& image) {
-    // Placeholder for image drawing algorithm
+    currentRenderStrategy->drawImage(pixels, x, y, image); // Use the render strategy to draw the image
 }
