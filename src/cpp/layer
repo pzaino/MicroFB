@@ -1,0 +1,97 @@
+/*
+ * This file is part of: 
+ *      MicroFB, a minimal framebuffer library for RISC OS
+ *
+ * Description: 
+ *      This project aims to provide a simple and efficient way to manage
+ *      the framebuffer on RISC OS using C++11. It abstracts the direct 
+ *      interaction with the GraphicsV API, offering a higher-level 
+ *      interface for drawing operations and framebuffer manipulation.
+ *
+ * Author:
+ *     Paolo Fabio Zaino, all rights reserved.
+ * Distributed under License: 
+ *      CDDL v1.1 (Common Development and Distribution License Version 
+ *      1.1) The use of this project is subject to the terms of the 
+ *      CDDL v1.1. This project can be used and distributed according 
+ *      to the terms of this license. For details on the CDDL v1.1, 
+ *      please refer to the official license documentation.
+ */
+
+#include "layer.hpp"
+
+// Constructor implementation
+Layer::Layer(pixel_t width, pixel_t height, std::shared_ptr<RenderStrategy> strategy)
+    : width(width), height(height), opacity(1.0f), visible(true), currentRenderStrategy(strategy) {
+    pixels.resize(width * height, 0); // Initialize pixel buffer with default color (0)
+}
+
+// Destructor implementation
+Layer::~Layer() {
+    // No manual resource management needed here due to use of smart pointers and vectors
+}
+
+// Clear the layer with a specific color
+void Layer::clear(color_t color) {
+   currentRenderStrategy->clear(pixels, color); // Use the render strategy to clear the layer
+}
+
+// Direct pixel manipulation
+void Layer::setPixel(pixel_t x, pixel_t y, color_t color) {
+    currentRenderStrategy->setPixel(pixels, x, y, color); // Use the render strategy to set the pixel
+}
+
+// Draw a line (placeholder for actual line drawing algorithm, e.g., Bresenham's)
+void Layer::drawLine(pixel_t x1, pixel_t y1, pixel_t x2, pixel_t y2, color_t color) {
+    currentRenderStrategy->drawLine(pixels, x1, y1, x2, y2, color); // Use the render strategy to draw the line
+}
+
+// Draw a rectangle (simple example)
+void Layer::drawRect(pixel_t x, pixel_t y, pixel_t w, pixel_t h, color_t color) {
+    currentRenderStrategy->drawRect(pixels, x, y, w, h, color); // Use the render strategy to draw the rectangle
+}
+
+// Fill a rectangle
+void Layer::fillRect(pixel_t x, pixel_t y, pixel_t w, pixel_t h, color_t color) {
+    currentRenderStrategy->fillRect(pixels, x, y, w, h, color); // Use the render strategy to fill the rectangle
+}
+
+// Draw a circle 
+void Layer::drawCircle(pixel_t x, pixel_t y, pixel_t r, color_t color) {
+    currentRenderStrategy->drawCircle(pixels, x, y, r, color); // Use the render strategy to draw the circle
+}
+
+// Fill a circle 
+void Layer::fillCircle(pixel_t x, pixel_t y, pixel_t r, color_t color) {
+    currentRenderStrategy->fillCircle(pixels, x, y, r, color); // Use the render strategy to fill the circle
+}
+
+// Draw an ellipse 
+void Layer::drawEllipse(pixel_t x, pixel_t y, pixel_t rx, pixel_t ry, color_t color) {
+    currentRenderStrategy->drawEllipse(pixels, x, y, rx, ry, color); // Use the render strategy to draw the ellipse
+}
+
+// Fill an ellipse 
+void Layer::fillEllipse(pixel_t x, pixel_t y, pixel_t rx, pixel_t ry, color_t color) {
+    currentRenderStrategy->fillEllipse(pixels, x, y, rx, ry, color); // Use the render strategy to fill the ellipse
+}
+
+// Draw a polygon 
+void Layer::drawPolygon(const std::vector<pixel_t>& points, color_t color) {
+    currentRenderStrategy->drawPolygon(pixels, points, color); // Use the render strategy to draw the polygon
+}
+
+// Fill a polygon 
+void Layer::fillPolygon(const std::vector<pixel_t>& points, color_t color) {
+    currentRenderStrategy->fillPolygon(pixels, points, color); // Use the render strategy to fill the polygon
+}
+
+// Draw text 
+void Layer::drawText(pixel_t x, pixel_t y, const char* text, color_t color) {
+    currentRenderStrategy->drawText(pixels, x, y, text, color); // Use the render strategy to draw the text
+}
+
+// Draw an image 
+void Layer::drawImage(pixel_t x, pixel_t y, const Layer& image) {
+    currentRenderStrategy->drawImage(pixels, x, y, image); // Use the render strategy to draw the image
+}
