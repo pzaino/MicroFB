@@ -1,0 +1,55 @@
+/*
+ * This file is part of: 
+ *      MicroFB, a minimal framebuffer library for RISC OS
+ *
+ * Description: 
+ *      This project aims to provide a simple and efficient way to manage
+ *      the framebuffer on RISC OS using C++11. It abstracts the direct 
+ *      interaction with the GraphicsV API, offering a higher-level 
+ *      interface for drawing operations and framebuffer manipulation.
+ *
+ * Author:
+ *     Paolo Fabio Zaino, all rights reserved.
+ * Distributed under License: 
+ *      CDDL v1.1 (Common Development and Distribution License Version 
+ *      1.1) The use of this project is subject to the terms of the 
+ *      CDDL v1.1. This project can be used and distributed according 
+ *      to the terms of this license. For details on the CDDL v1.1, 
+ *      please refer to the official license documentation.
+ */
+
+#ifndef RENDERSTRATEGY_HPP
+#define RENDERSTRATEGY_HPP
+
+#include <memory>
+#include <vector>
+#include <cstdint> // For pixel_t and color_t types
+
+// Forward declaration of Layer to resolve circular dependency
+class Layer;
+
+typedef uint32_t color_t; // 32-bit color, assuming it represents ARGB or similar
+typedef uint32_t pixel_t; // 32-bit pixel, for dimensions
+
+class RenderStrategy {
+public:
+    virtual ~RenderStrategy() {}
+
+    // Pure virtual functions for rendering operations
+    virtual void setPixel(Layer& layer, pixel_t x, pixel_t y, color_t color) = 0;
+    virtual void drawLine(Layer& layer, pixel_t x1, pixel_t y1, pixel_t x2, pixel_t y2, color_t color) = 0;
+    virtual void drawRect(Layer& layer, pixel_t x, pixel_t y, pixel_t w, pixel_t h, color_t color) = 0;
+    virtual void fillRect(Layer& layer, pixel_t x, pixel_t y, pixel_t w, pixel_t h, color_t color) = 0;
+    virtual void drawCircle(Layer& layer, pixel_t x, pixel_t y, pixel_t r, color_t color) = 0;
+    virtual void fillCircle(Layer& layer, pixel_t x, pixel_t y, pixel_t r, color_t color) = 0;
+    virtual void drawEllipse(Layer& layer, pixel_t x, pixel_t y, pixel_t rx, pixel_t ry, color_t color) = 0;
+    virtual void fillEllipse(Layer& layer, pixel_t x, pixel_t y, pixel_t rx, pixel_t ry, color_t color) = 0;
+    virtual void drawPolygon(Layer& layer, const std::vector<pixel_t>& points, color_t color) = 0;
+    virtual void fillPolygon(Layer& layer, const std::vector<pixel_t>& points, color_t color) = 0;
+    virtual void drawText(Layer& layer, pixel_t x, pixel_t y, const char* text, color_t color) = 0;
+    virtual void drawImage(Layer& layer, pixel_t x, pixel_t y, const Layer& image) = 0;
+
+    // Additional methods for setup, teardown, or state management can be added here
+};
+
+#endif // RENDERSTRATEGY_HPP

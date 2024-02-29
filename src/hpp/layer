@@ -1,0 +1,63 @@
+/*
+ * This file is part of: 
+ *      MicroFB, a minimal framebuffer library for RISC OS
+ *
+ * Description: 
+ *      This project aims to provide a simple and efficient way to manage
+ *      the framebuffer on RISC OS using C++11. It abstracts the direct 
+ *      interaction with the GraphicsV API, offering a higher-level 
+ *      interface for drawing operations and framebuffer manipulation.
+ *
+ * Author:
+ *     Paolo Fabio Zaino, all rights reserved.
+ * Distributed under License: 
+ *      CDDL v1.1 (Common Development and Distribution License Version 
+ *      1.1) The use of this project is subject to the terms of the 
+ *      CDDL v1.1. This project can be used and distributed according 
+ *      to the terms of this license. For details on the CDDL v1.1, 
+ *      please refer to the official license documentation.
+ */
+
+#ifndef LAYER_HPP
+#define LAYER_HPP
+
+#include <vector>
+#include <cstdint>
+#include <memory> // For std::shared_ptr
+
+#include "render_strategy.hpp"
+
+typedef uint32_t color_t; // 32-bit color
+typedef uint32_t pixel_t; // 32-bit pixel, assuming it represents dimensions
+
+class Layer {
+private:
+    std::shared_ptr<RenderStrategy> currentRenderStrategy;
+
+public:
+    std::vector<color_t> pixels; // Pixel data for this layer
+    float opacity; // Layer opacity
+    bool visible; // Layer visibility
+    pixel_t width, height; // Dimensions of the layer
+
+    // Constructor and destructor
+    Layer(pixel_t width, pixel_t height, std::shared_ptr<RenderStrategy> strategy);
+    ~Layer();
+
+    // Drawing operations
+    void clear(color_t color); // Clear the layer with a specific color
+    void setPixel(pixel_t x, pixel_t y, color_t color); // Direct pixel manipulation
+    void drawLine(pixel_t x1, pixel_t y1, pixel_t x2, pixel_t y2, color_t color); // Draw a line
+    void drawRect(pixel_t x, pixel_t y, pixel_t w, pixel_t h, color_t color); // Draw a rectangle
+    void fillRect(pixel_t x, pixel_t y, pixel_t w, pixel_t h, color_t color); // Fill a rectangle
+    void drawCircle(pixel_t x, pixel_t y, pixel_t r, color_t color); // Draw a circle
+    void fillCircle(pixel_t x, pixel_t y, pixel_t r, color_t color); // Fill a circle
+    void drawEllipse(pixel_t x, pixel_t y, pixel_t rx, pixel_t ry, color_t color); // Draw an ellipse
+    void fillEllipse(pixel_t x, pixel_t y, pixel_t rx, pixel_t ry, color_t color); // Fill an ellipse
+    void drawPolygon(const std::vector<pixel_t>& points, color_t color); // Draw a polygon
+    void fillPolygon(const std::vector<pixel_t>& points, color_t color); // Fill a polygon
+    void drawText(pixel_t x, pixel_t y, const char* text, color_t color); // Draw text
+    void drawImage(pixel_t x, pixel_t y, const Layer& image); // Draw an image
+};
+
+#endif // LAYER_HPP

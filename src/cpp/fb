@@ -18,32 +18,48 @@
  *      please refer to the official license documentation.
  */
 
-#include <vector>
-#include <cstdint> // For standard integer types
-
 #include "fb.hpp"
+#include "layer.hpp" // Ensure this is included if not already included in fb.hpp
 
-FrameBuffer::FrameBuffer(pixel_t width, pixel_t height) : 
-    width_(width), height_(height), buffer_(width * height) {} // Initialize the buffer with the given width and height
+// Constructor
+FrameBuffer::FrameBuffer(unsigned int width, unsigned int height, std::shared_ptr<RenderStrategy> strategy)
+    : width(width), height(height), renderStrategy(strategy) {}
 
-void FrameBuffer::setPixel(pixel_t x, pixel_t y, color_t color) {
-    // Set the pixel at the given coordinates to the specified color
-    pixel_t index = y * getWidth() + x;
-    buffer[index] = color;
+// Add a layer to the framebuffer
+void FrameBuffer::addLayer(const Layer& layer) {
+    layers.push_back(layer);
+    // Assuming Layer copy constructor or assignment operator handles the strategy correctly
 }
 
-color_t FrameBuffer::getPixel(pixel_t x, pixel_t y) const {
-    // Get the color of the pixel at the given coordinates
-    pixel_t index = y * getWidth() + x;
-    return buffer[index];
+// Remove a layer from the framebuffer by index
+void FrameBuffer::removeLayer(size_t index) {
+    if (index < layers.size()) {
+        layers.erase(layers.begin() + index);
+    }
 }
 
-int FrameBuffer::getWidth() const {
-    // Get the width of the frame buffer
-    return buffer.size() / getHeight();
+// Accessor for layer by index
+Layer& FrameBuffer::getLayer(size_t index) {
+    // Simple bounds checking, throw std::out_of_range if index is invalid
+    if (index >= layers.size()) {
+        throw std::out_of_range("Layer index is out of range.");
+    }
+    return layers[index];
 }
 
-int FrameBuffer::getHeight() const {
-    // Get the height of the frame buffer
-    return buffer.size() / getWidth();
+// Set the render strategy for the framebuffer and all its layers
+void FrameBuffer::setRenderStrategy(std::shared_ptr<RenderStrategy> strategy) {
+    renderStrategy = strategy;
+    // Update the render strategy for all existing layers
+    for (auto& layer : layers) {
+        layer.setRenderStrategy(renderStrategy);
+    }
+}
+
+// Placeholder for the actual implementation of merging all layers
+void FrameBuffer::mergeLayers() {
+    // Implementation depends on how you want to combine the layers
+    // This could involve blending pixels from each layer based on their opacity,
+    // and visibility, or simply stacking them in order.
+    // For simplicity, we're not providing a specific implementation here.
 }

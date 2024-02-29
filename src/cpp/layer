@@ -1,0 +1,103 @@
+/*
+ * This file is part of: 
+ *      MicroFB, a minimal framebuffer library for RISC OS
+ *
+ * Description: 
+ *      This project aims to provide a simple and efficient way to manage
+ *      the framebuffer on RISC OS using C++11. It abstracts the direct 
+ *      interaction with the GraphicsV API, offering a higher-level 
+ *      interface for drawing operations and framebuffer manipulation.
+ *
+ * Author:
+ *     Paolo Fabio Zaino, all rights reserved.
+ * Distributed under License: 
+ *      CDDL v1.1 (Common Development and Distribution License Version 
+ *      1.1) The use of this project is subject to the terms of the 
+ *      CDDL v1.1. This project can be used and distributed according 
+ *      to the terms of this license. For details on the CDDL v1.1, 
+ *      please refer to the official license documentation.
+ */
+
+#include "layer.hpp"
+
+// Constructor implementation
+Layer::Layer(pixel_t width, pixel_t height, std::shared_ptr<RenderStrategy> strategy)
+    : width(width), height(height), opacity(1.0f), visible(true), currentRenderStrategy(strategy) {
+    pixels.resize(width * height, 0); // Initialize pixel buffer with default color (0)
+}
+
+// Destructor implementation
+Layer::~Layer() {
+    // No manual resource management needed here due to use of smart pointers and vectors
+}
+
+// Clear the layer with a specific color
+void Layer::clear(color_t color) {
+    std::fill(pixels.begin(), pixels.end(), color);
+}
+
+// Direct pixel manipulation
+void Layer::setPixel(pixel_t x, pixel_t y, color_t color) {
+    if (x < width && y < height) {
+        pixels[y * width + x] = color;
+    }
+}
+
+// Draw a line (placeholder for actual line drawing algorithm, e.g., Bresenham's)
+void Layer::drawLine(pixel_t x1, pixel_t y1, pixel_t x2, pixel_t y2, color_t color) {
+    // Implementation of a line drawing algorithm goes here
+}
+
+// Draw a rectangle (simple example)
+void Layer::drawRect(pixel_t x, pixel_t y, pixel_t w, pixel_t h, color_t color) {
+    for (pixel_t i = x; i < x + w; ++i) {
+        for (pixel_t j = y; j < y + h; ++j) {
+            setPixel(i, j, color);
+        }
+    }
+}
+
+// Fill a rectangle
+void Layer::fillRect(pixel_t x, pixel_t y, pixel_t w, pixel_t h, color_t color) {
+    drawRect(x, y, w, h, color); // For simplicity, just using drawRect here
+}
+
+// Draw a circle (placeholder)
+void Layer::drawCircle(pixel_t x, pixel_t y, pixel_t r, color_t color) {
+    // Placeholder for circle drawing algorithm
+}
+
+// Fill a circle (placeholder)
+void Layer::fillCircle(pixel_t x, pixel_t y, pixel_t r, color_t color) {
+    // Placeholder for filled circle algorithm
+}
+
+// Draw an ellipse (placeholder)
+void Layer::drawEllipse(pixel_t x, pixel_t y, pixel_t rx, pixel_t ry, color_t color) {
+    // Placeholder for ellipse drawing algorithm
+}
+
+// Fill an ellipse (placeholder)
+void Layer::fillEllipse(pixel_t x, pixel_t y, pixel_t rx, pixel_t ry, color_t color) {
+    // Placeholder for filled ellipse algorithm
+}
+
+// Draw a polygon (placeholder)
+void Layer::drawPolygon(const std::vector<pixel_t>& points, color_t color) {
+    // Placeholder for polygon drawing algorithm
+}
+
+// Fill a polygon (placeholder)
+void Layer::fillPolygon(const std::vector<pixel_t>& points, color_t color) {
+    // Placeholder for filled polygon algorithm
+}
+
+// Draw text (placeholder)
+void Layer::drawText(pixel_t x, pixel_t y, const char* text, color_t color) {
+    // Placeholder for text drawing algorithm
+}
+
+// Draw an image (placeholder)
+void Layer::drawImage(pixel_t x, pixel_t y, const Layer& image) {
+    // Placeholder for image drawing algorithm
+}

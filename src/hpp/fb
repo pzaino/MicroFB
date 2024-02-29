@@ -22,45 +22,36 @@
 #define FB_HPP
 
 #include <vector>
-#include <cstdint> // For standard integer types
+#include <memory> // For std::shared_ptr
 
-typedef uint32_t color_t; // 32-bit color
-typedef uint32_t pixel_t; // 32-bit pixel
+#include "layer.hpp" 
+#include "render_strategy.hpp" 
 
 class FrameBuffer {
-public:
-    FrameBuffer(pixel_t width, pixel_t height); // Constructor
-    ~FrameBuffer(); // Destructor for cleanup
+  private:
+    std::vector<Layer> layers; // Collection of layers
+    std::shared_ptr<RenderStrategy> renderStrategy; // Shared rendering strategy
+    unsigned int width, height; // Dimensions of the framebuffer
 
-    void initialize(const char* fbDevicePath); // Initialize framebuffer device
-    void close(); // Close framebuffer device
+  public:
+    // Constructor that initializes the framebuffer with dimensions and a rendering strategy
+    FrameBuffer(unsigned int width, unsigned int height, std::shared_ptr<RenderStrategy> strategy)
 
-    pixel_t getWidth() const; // Get the framebuffer's width
-    pixel_t getHeight() const; // Get the framebuffer's height
+    // Add a layer to the framebuffer
+    void addLayer(const Layer& layer);
 
-    void setPixel(pixel_t x, pixel_t y, color_t color); // Set a pixel's color
-    color_t getPixel(pixel_t x, pixel_t y) const; // Get a pixel's color
+    // Remove a layer from the framebuffer by index
+    void removeLayer(size_t index);
 
-    void clear(color_t color = 0); // Clear the framebuffer with a specific color
+    // Accessor for layer by index
+    Layer& getLayer(size_t index);
 
-    // Add methods for drawing shapes, images, etc.
-    void drawPoint(pixel_t x, pixel_t y, color_t color); // Draw a point
-    void drawLine(pixel_t x1, pixel_t y1, pixel_t x2, pixel_t y2, color_t color); // Draw a line
-    void drawRectangle(pixel_t x, pixel_t y, pixel_t width, pixel_t height, color_t color); // Draw a rectangle
-    void drawCircle(pixel_t x, pixel_t y, pixel_t radius, color_t color); // Draw a circle
-    void drawEllipse(pixel_t x, pixel_t y, pixel_t xRadius, pixel_t yRadius, color_t color); // Draw an ellipse
-    void drawTriangle(pixel_t x1, pixel_t y1, pixel_t x2, pixel_t y2, pixel_t x3, pixel_t y3, color_t color); // Draw a triangle
-    void drawPolygon(const std::vector<pixel_t>& xCoords, const std::vector<pixel_t>& yCoords, color_t color); // Draw a polygon
-    void drawImage(const std::vector<color_t>& image, pixel_t x, pixel_t y, pixel_t width, pixel_t height); // Draw an image
+    // Set the render strategy for the framebuffer and all its layers
+    void setRenderStrategy(std::shared_ptr<RenderStrategy> strategy);
 
-    // TODO: Add methods for drawing text, etc.
+    // Method to merge all layers - Placeholder for actual implementation
+    void mergeLayers();
 
-    // TODO: Add methods for handling input, etc.
-
-private:
-    pixel_t width_, height_;
-    std::vector<color_t> buffer_; // 32 bits per pixel (e.g., 8 bits for RGBA channels)
-    int fbFd_; // File descriptor for the framebuffer device
 };
 
 #endif // FB_HPP
