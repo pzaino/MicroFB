@@ -59,5 +59,5 @@ void FrameBuffer::setRenderStrategy(std::shared_ptr<RenderStrategy> strategy) {
 void FrameBuffer::mergeLayers() {
     // This could involve blending pixels from each layer based on their opacity,
     // and visibility, or simply stacking them in order.
-    // For simplicity, we're not providing a specific implementation here.
+    // TODO: This is a placeholder for the actual implementation
 }
