@@ -36,6 +36,7 @@ public:
     virtual ~RenderStrategy() {}
 
     // Pure virtual functions for rendering operations
+    virtual void clear(Layer& layer, color_t color) = 0;
     virtual void setPixel(Layer& layer, pixel_t x, pixel_t y, color_t color) = 0;
     virtual void drawLine(Layer& layer, pixel_t x1, pixel_t y1, pixel_t x2, pixel_t y2, color_t color) = 0;
     virtual void drawRect(Layer& layer, pixel_t x, pixel_t y, pixel_t w, pixel_t h, color_t color) = 0;
@@ -48,8 +49,6 @@ public:
     virtual void fillPolygon(Layer& layer, const std::vector<pixel_t>& points, color_t color) = 0;
     virtual void drawText(Layer& layer, pixel_t x, pixel_t y, const char* text, color_t color) = 0;
     virtual void drawImage(Layer& layer, pixel_t x, pixel_t y, const Layer& image) = 0;
-
-    // Additional methods for setup, teardown, or state management can be added here
 };
 
 #endif // RENDERSTRATEGY_HPP
