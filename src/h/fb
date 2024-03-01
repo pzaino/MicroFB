@@ -1,0 +1,64 @@
+/*
+ * This file is part of:
+ *      MicroFB, a minimal framebuffer library for RISC OS
+ *
+ * Description:
+ *      This project aims to provide a simple and efficient way to manage
+ *      the framebuffer on RISC OS using C++11. It abstracts the direct
+ *      interaction with the GraphicsV API, offering a higher-level
+ *      interface for drawing operations and framebuffer manipulation.
+ *
+ * Author:
+ *     Paolo Fabio Zaino, all rights reserved.
+ * Distributed under License:
+ *      CDDL v1.1 (Common Development and Distribution License Version
+ *      1.1) The use of this project is subject to the terms of the
+ *      CDDL v1.1. This project can be used and distributed according
+ *      to the terms of this license. For details on the CDDL v1.1,
+ *      please refer to the official license documentation.
+ */
+
+#ifndef FB_HPP
+#define FB_HPP
+
+#include <vector>
+#include <memory> // For std::shared_ptr
+
+// Include MicroFB libraries
+#include "common.h"
+#if GCC_VERSION < 50000
+// Include my own C++ STDLib extras for compatibility with older GCC versions
+//#include "stdlib_extras.h"
+#endif
+#include "layer.h"
+#include "render_strategy.h"
+#include "mem_manager.h"
+
+class FrameBuffer {
+  private:
+    std::shared_ptr<MemoryManager> currentMemoryManager;
+    std::vector<std::shared_ptr<Layer>> layers; // Use shared pointers for layers
+    std::shared_ptr<RenderStrategy> renderStrategy; // Shared rendering strategy
+    unsigned int width; // Horizontal dimension of the framebuffer
+    unsigned int height; // Vertical dimension of the framebuffer
+
+  public:
+    // Constructor
+    FrameBuffer(unsigned int h_dim, unsigned int v_dim, std::shared_ptr<RenderStrategy> strategy);
+
+    // Methods for managing layers using shared_ptr
+    void addLayer(const std::shared_ptr<Layer>& layer);
+    void addLayer(std::shared_ptr<Layer>&& layer);
+    void addLayer();
+
+    void removeLayer(size_t index);
+
+    std::shared_ptr<Layer> getLayer(size_t index) const; // Return type changed to shared_ptr
+
+    void setRenderStrategy(std::shared_ptr<RenderStrategy> strategy);
+    void setMemoryManager(std::shared_ptr<MemoryManager> manager);
+
+    void mergeLayers(); // Placeholder for actual implementation
+};
+
+#endif // FB_HPP
