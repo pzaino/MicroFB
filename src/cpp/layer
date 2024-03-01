@@ -18,6 +18,7 @@
  *      please refer to the official license documentation.
  */
 
+#include <stdexcept>
 #include <memory> // For std::shared_ptr
 
 // Include MicroFB libraries
@@ -31,93 +32,126 @@
 
 // Constructor implementation
 Layer::Layer(pixel_t width, pixel_t height, std::shared_ptr<RenderStrategy> strategy, std::shared_ptr<MemoryManager> currMemoryManager)
-    : currentRenderStrategy(strategy), opacity(1.0f), visible(true), width(width), height(height)  {
-
+    : currentRenderStrategy(strategy), opacity(1.0f), visible(true), width(width), height(height)
+{
     if (currentMemoryManager == nullptr) {
+        if (currMemoryManager == nullptr) {
+            throw std::runtime_error("MemoryManager cannot be null");
+        }
         currentMemoryManager = currMemoryManager;
     }
 
     // Initialize pixel buffer with default color (0)
     pixels = static_cast<color_t*>(currentMemoryManager->allocate(width * height * sizeof(color_t)));
-
 }
 
 // Destructor implementation
-Layer::~Layer() {
+Layer::~Layer()
+{
     // Not much for now
 }
 
 // Set the render strategy
-void Layer::setRenderStrategy(std::shared_ptr<RenderStrategy> strategy) {
-    currentRenderStrategy = strategy; // Set the render strategy
+void Layer::setRenderStrategy(std::shared_ptr<RenderStrategy> strategy)
+{
+    // Set the render strategy
+    currentRenderStrategy = strategy;
 }
 
 // Set the memory manager
-void Layer::setMemoryManager(std::shared_ptr<MemoryManager> manager) {
-    currentMemoryManager = manager; // Set the memory manager
+void Layer::setMemoryManager(std::shared_ptr<MemoryManager> manager)
+{
+    // Set the memory manager
+    currentMemoryManager = manager;
 }
 
 // Clear the layer with a specific color
-void Layer::clear(color_t color) {
-   currentRenderStrategy->clear(*this, color); // Use the render strategy to clear the layer
+void Layer::clear(color_t color)
+{
+   // Use the render strategy to clear the layer
+   currentRenderStrategy->clear(*this, color);
 }
 
 // Direct pixel manipulation
 void Layer::setPixel(pixel_t x, pixel_t y, color_t color) {
-    currentRenderStrategy->setPixel(*this, x, y, color); // Use the render strategy to set the pixel
+    // Use the render strategy to set the pixel
+    currentRenderStrategy->setPixel(*this, x, y, color);
 }
 
 // Draw a line
-void Layer::drawLine(pixel_t x1, pixel_t y1, pixel_t x2, pixel_t y2, color_t color) {
-    currentRenderStrategy->drawLine(*this, x1, y1, x2, y2, color); // Use the render strategy to draw the line
+void Layer::drawLine(pixel_t x1, pixel_t y1, pixel_t x2, pixel_t y2, color_t color)
+{
+    // Use the render strategy to draw the line
+    currentRenderStrategy->drawLine(*this, x1, y1, x2, y2, color);
 }
 
 // Draw a rectangle
-void Layer::drawRect(pixel_t x, pixel_t y, pixel_t w, pixel_t h, color_t color) {
-    currentRenderStrategy->drawRect(*this, x, y, w, h, color); // Use the render strategy to draw the rectangle
+void Layer::drawRect(pixel_t x, pixel_t y, pixel_t w, pixel_t h, color_t color)
+{
+    // Use the render strategy to draw the rectangle
+    currentRenderStrategy->drawRect(*this, x, y, w, h, color);
 }
 
 // Fill a rectangle
-void Layer::fillRect(pixel_t x, pixel_t y, pixel_t w, pixel_t h, color_t color) {
-    currentRenderStrategy->fillRect(*this, x, y, w, h, color); // Use the render strategy to fill the rectangle
+void Layer::fillRect(pixel_t x, pixel_t y, pixel_t w, pixel_t h, color_t color)
+{
+    // Use the render strategy to fill the rectangle
+    currentRenderStrategy->fillRect(*this, x, y, w, h, color);
 }
 
 // Draw a circle
-void Layer::drawCircle(pixel_t x, pixel_t y, pixel_t r, color_t color) {
-    currentRenderStrategy->drawCircle(*this, x, y, r, color); // Use the render strategy to draw the circle
+void Layer::drawCircle(pixel_t x, pixel_t y, pixel_t r, color_t color)
+{
+    // Use the render strategy to draw the circle
+    currentRenderStrategy->drawCircle(*this, x, y, r, color);
 }
 
 // Fill a circle
-void Layer::fillCircle(pixel_t x, pixel_t y, pixel_t r, color_t color) {
-    currentRenderStrategy->fillCircle(*this, x, y, r, color); // Use the render strategy to fill the circle
+void Layer::fillCircle(pixel_t x, pixel_t y, pixel_t r, color_t color)
+{
+    // Use the render strategy to fill the circle
+    currentRenderStrategy->fillCircle(*this, x, y, r, color);
 }
 
 // Draw an ellipse
-void Layer::drawEllipse(pixel_t x, pixel_t y, pixel_t rx, pixel_t ry, color_t color) {
-    currentRenderStrategy->drawEllipse(*this, x, y, rx, ry, color); // Use the render strategy to draw the ellipse
+void Layer::drawEllipse(pixel_t x, pixel_t y, pixel_t rx,
+                        pixel_t ry, color_t color)
+{
+    // Use the render strategy to draw the ellipse
+    currentRenderStrategy->drawEllipse(*this, x, y, rx, ry, color);
 }
 
 // Fill an ellipse
-void Layer::fillEllipse(pixel_t x, pixel_t y, pixel_t rx, pixel_t ry, color_t color) {
-    currentRenderStrategy->fillEllipse(*this, x, y, rx, ry, color); // Use the render strategy to fill the ellipse
+void Layer::fillEllipse(pixel_t x, pixel_t y, pixel_t rx,
+                        pixel_t ry, color_t color)
+{
+    // Use the render strategy to fill the ellipse
+    currentRenderStrategy->fillEllipse(*this, x, y, rx, ry, color);
 }
 
 // Draw a polygon
 void Layer::drawPolygon(const std::vector<pixel_t>& points, color_t color) {
-    currentRenderStrategy->drawPolygon(*this, points, color); // Use the render strategy to draw the polygon
+    // Use the render strategy to draw the polygon
+    currentRenderStrategy->drawPolygon(*this, points, color);
 }
 
 // Fill a polygon
-void Layer::fillPolygon(const std::vector<pixel_t>& points, color_t color) {
-    currentRenderStrategy->fillPolygon(*this, points, color); // Use the render strategy to fill the polygon
+void Layer::fillPolygon(const std::vector<pixel_t>& points, color_t color)
+{
+    // Use the render strategy to fill the polygon
+    currentRenderStrategy->fillPolygon(*this, points, color);
 }
 
 // Draw text
-void Layer::drawText(pixel_t x, pixel_t y, const char* text, color_t color) {
-    currentRenderStrategy->drawText(*this, x, y, text, color); // Use the render strategy to draw the text
+void Layer::drawText(pixel_t x, pixel_t y, const char* text, color_t color)
+{
+    // Use the render strategy to draw the text
+    currentRenderStrategy->drawText(*this, x, y, text, color);
 }
 
 // Draw an image
-void Layer::drawImage(pixel_t x, pixel_t y, const Layer& image) {
-    currentRenderStrategy->drawImage(*this, x, y, image); // Use the render strategy to draw the image
+void Layer::drawImage(pixel_t x, pixel_t y, const Layer& image)
+{
+    // Use the render strategy to draw the image
+    currentRenderStrategy->drawImage(*this, x, y, image);
 }

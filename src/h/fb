@@ -34,7 +34,8 @@
 #include "render_strategy.h"
 #include "mem_manager.h"
 
-class FrameBuffer {
+class FrameBuffer
+{
   private:
     std::shared_ptr<MemoryManager> currentMemoryManager;
     std::vector<std::shared_ptr<Layer>> layers; // Use shared pointers for layers

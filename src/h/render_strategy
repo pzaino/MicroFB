@@ -1,20 +1,20 @@
 /*
- * This file is part of: 
+ * This file is part of:
  *      MicroFB, a minimal framebuffer library for RISC OS
  *
- * Description: 
+ * Description:
  *      This project aims to provide a simple and efficient way to manage
- *      the framebuffer on RISC OS using C++11. It abstracts the direct 
- *      interaction with the GraphicsV API, offering a higher-level 
+ *      the framebuffer on RISC OS using C++11. It abstracts the direct
+ *      interaction with the GraphicsV API, offering a higher-level
  *      interface for drawing operations and framebuffer manipulation.
  *
  * Author:
  *     Paolo Fabio Zaino, all rights reserved.
- * Distributed under License: 
- *      CDDL v1.1 (Common Development and Distribution License Version 
- *      1.1) The use of this project is subject to the terms of the 
- *      CDDL v1.1. This project can be used and distributed according 
- *      to the terms of this license. For details on the CDDL v1.1, 
+ * Distributed under License:
+ *      CDDL v1.1 (Common Development and Distribution License Version
+ *      1.1) The use of this project is subject to the terms of the
+ *      CDDL v1.1. This project can be used and distributed according
+ *      to the terms of this license. For details on the CDDL v1.1,
  *      please refer to the official license documentation.
  */
 
@@ -31,9 +31,10 @@ class Layer;
 typedef uint32_t color_t; // 32-bit color, assuming it represents ARGB or similar
 typedef uint32_t pixel_t; // 32-bit pixel, for dimensions
 
-class RenderStrategy {
+class RenderStrategy
+{
 public:
-    virtual ~RenderStrategy() {}
+    virtual ~RenderStrategy() {};
 
     // Pure virtual functions for rendering operations
     virtual void clear(Layer& layer, color_t color) = 0;

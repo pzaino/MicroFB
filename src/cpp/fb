@@ -35,7 +35,8 @@ FrameBuffer::FrameBuffer(unsigned int h_dim, unsigned int v_dim, std::shared_ptr
     : renderStrategy(strategy), width(h_dim), height(v_dim) {}
 
 // Add a layer to the framebuffer
-void FrameBuffer::addLayer(const std::shared_ptr<Layer>& layer) {
+void FrameBuffer::addLayer(const std::shared_ptr<Layer>& layer)
+{
     layers.push_back(layer);
 }
 
@@ -45,19 +46,22 @@ void FrameBuffer::addLayer(std::shared_ptr<Layer>&& layer) {
 }
 
 // Add a layer to the framebuffer
-void FrameBuffer::addLayer() {
+void FrameBuffer::addLayer()
+{
     layers.push_back(std::make_shared<Layer>(width, height, renderStrategy, currentMemoryManager));
 }
 
 // Remove a layer from the framebuffer by index
-void FrameBuffer::removeLayer(size_t index) {
+void FrameBuffer::removeLayer(size_t index)
+{
     if (index < layers.size()) {
         layers.erase(layers.begin() + index);
     }
 }
 
 // Accessor for layer by index
-std::shared_ptr<Layer> FrameBuffer::getLayer(size_t index) const {
+std::shared_ptr<Layer> FrameBuffer::getLayer(size_t index) const
+{
     // Simple bounds checking, throw std::out_of_range if index is invalid
     if (index >= layers.size()) {
         throw std::out_of_range("Layer index is out of range.");
@@ -66,7 +70,8 @@ std::shared_ptr<Layer> FrameBuffer::getLayer(size_t index) const {
 }
 
 // Set the render strategy for the framebuffer and all its layers
-void FrameBuffer::setRenderStrategy(std::shared_ptr<RenderStrategy> strategy) {
+void FrameBuffer::setRenderStrategy(std::shared_ptr<RenderStrategy> strategy)
+{
     renderStrategy = strategy;
     // Update the render strategy for all existing layers
     for (auto& layer : layers) {
@@ -75,7 +80,8 @@ void FrameBuffer::setRenderStrategy(std::shared_ptr<RenderStrategy> strategy) {
 }
 
 // Set the memory manager for the framebuffer and all its layers
-void FrameBuffer::setMemoryManager(std::shared_ptr<MemoryManager> manager) {
+void FrameBuffer::setMemoryManager(std::shared_ptr<MemoryManager> manager)
+{
     currentMemoryManager = manager;
     // Update the memory manager for all existing layers
     for (auto& layer : layers) {
@@ -84,7 +90,8 @@ void FrameBuffer::setMemoryManager(std::shared_ptr<MemoryManager> manager) {
 }
 
 // Placeholder for the actual implementation of merging all layers
-void FrameBuffer::mergeLayers() {
+void FrameBuffer::mergeLayers()
+{
     // This could involve blending pixels from each layer based on their opacity,
     // and visibility, or simply stacking them in order.
     // TODO: This is a placeholder for the actual implementation
