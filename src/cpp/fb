@@ -1,33 +1,52 @@
 /*
- * This file is part of: 
+ * This file is part of:
  *      MicroFB, a minimal framebuffer library for RISC OS
  *
- * Description: 
+ * Description:
  *      This project aims to provide a simple and efficient way to manage
- *      the framebuffer on RISC OS using C++11. It abstracts the direct 
- *      interaction with the GraphicsV API, offering a higher-level 
+ *      the framebuffer on RISC OS using C++11. It abstracts the direct
+ *      interaction with the GraphicsV API, offering a higher-level
  *      interface for drawing operations and framebuffer manipulation.
  *
  * Author:
  *     Paolo Fabio Zaino, all rights reserved.
- * Distributed under License: 
- *      CDDL v1.1 (Common Development and Distribution License Version 
- *      1.1) The use of this project is subject to the terms of the 
- *      CDDL v1.1. This project can be used and distributed according 
- *      to the terms of this license. For details on the CDDL v1.1, 
+ * Distributed under License:
+ *      CDDL v1.1 (Common Development and Distribution License Version
+ *      1.1) The use of this project is subject to the terms of the
+ *      CDDL v1.1. This project can be used and distributed according
+ *      to the terms of this license. For details on the CDDL v1.1,
  *      please refer to the official license documentation.
  */
 
-#include "fb.hpp"
-#include "layer.hpp" 
+#include <stdexcept>
+#include <memory> // For std::shared_ptr
+
+// Include MicroFB libraries
+#include "common.h"
+#if GCC_VERSION < 50000
+// Include my own C++ STDLib extras for compatibility with older GCC versions
+//#include "stdlib_extras.h"
+#endif
+#include "fb.h"
+#include "layer.h"
 
 // Constructor
-FrameBuffer::FrameBuffer(unsigned int width, unsigned int height, std::shared_ptr<RenderStrategy> strategy)
-    : width(width), height(height), renderStrategy(strategy) {}
+FrameBuffer::FrameBuffer(unsigned int h_dim, unsigned int v_dim, std::shared_ptr<RenderStrategy> strategy)
+    : renderStrategy(strategy), width(h_dim), height(v_dim) {}
 
 // Add a layer to the framebuffer
-void FrameBuffer::addLayer(const Layer& layer) {
+void FrameBuffer::addLayer(const std::shared_ptr<Layer>& layer) {
     layers.push_back(layer);
+}
+
+// Add a layer to the framebuffer
+void FrameBuffer::addLayer(std::shared_ptr<Layer>&& layer) {
+    layers.push_back(std::move(layer));
+}
+
+// Add a layer to the framebuffer
+void FrameBuffer::addLayer() {
+    layers.push_back(std::make_shared<Layer>(width, height, renderStrategy, currentMemoryManager));
 }
 
 // Remove a layer from the framebuffer by index
@@ -38,7 +57,7 @@ void FrameBuffer::removeLayer(size_t index) {
 }
 
 // Accessor for layer by index
-Layer& FrameBuffer::getLayer(size_t index) {
+std::shared_ptr<Layer> FrameBuffer::getLayer(size_t index) const {
     // Simple bounds checking, throw std::out_of_range if index is invalid
     if (index >= layers.size()) {
         throw std::out_of_range("Layer index is out of range.");
@@ -51,7 +70,16 @@ void FrameBuffer::setRenderStrategy(std::shared_ptr<RenderStrategy> strategy) {
     renderStrategy = strategy;
     // Update the render strategy for all existing layers
     for (auto& layer : layers) {
-        layer.setRenderStrategy(renderStrategy);
+        layer->setRenderStrategy(renderStrategy);
+    }
+}
+
+// Set the memory manager for the framebuffer and all its layers
+void FrameBuffer::setMemoryManager(std::shared_ptr<MemoryManager> manager) {
+    currentMemoryManager = manager;
+    // Update the memory manager for all existing layers
+    for (auto& layer : layers) {
+        layer->setMemoryManager(currentMemoryManager);
     }
 }
 

@@ -1,0 +1,280 @@
+/*
+ * This file is part of the QuantumPi(e) project.
+ *
+ * QuantumPi(e): Quantum Register Library for Raspberry Pi
+ * Clusters
+ *
+ * Description:
+ * QuantumPi(e) is a C++ library designed to integrate
+ * quantum operations into traditional software by
+ * simulating quantum computing on Raspberry Pi clusters,
+ * particularly in configurations like Turing Pi 2 clusters.
+ * It provides quantum register manipulation functionalities
+ * along with server and client libraries for distributed
+ * quantum computing tasks. The library is optimized for
+ * RISC OS, Linux, and BSD environments.
+ *
+ * Author: Paolo Fabio Zaino
+ * Copyright (c) 2021 Paolo Fabio Zaino, all rights reserved
+ * Distribution License: CDDL v1.1
+ *
+ * Repository: github.com/pzaino/QuantumPi-e-
+ *
+ * QuantumPi(e) is built for ease of integration into
+ * existing software systems, enabling developers to
+ * harness the power of quantum computing on Raspberry Pi
+ * clusters. It offers a flexible and efficient solution for
+ * quantum register manipulation and distributed quantum
+ * computing tasks. This library is intended for educational
+ * purposes, research,and potential commercial applications.
+ * Contributions and feedback are welcome to enhance its
+ * functionality and performance.
+ */
+
+#ifndef COMMON_H
+#define COMMON_H
+
+// Check the OS:
+#define OS_RISCOS 0
+#define OS_WINDOWS 1
+#define OS_OS2 2
+#define OS_LINUX 3
+#define OS_BSD 4
+#define OS_MACOS 5
+#define OS_SOLARIS 6
+#define OS_HPUX 7
+#define OS_HAIKU 8
+#define OS_BEOS 9
+#define OS_QNX 10
+#define OS_TRU64 11
+#define OS_UNIX 12
+#define OS_AIX 13
+#define OS_AMIGAOS 14
+#define OS_MORPHOS 15
+#define OS_SYLLABLE 16
+#define OS_VMS 17
+
+#if defined(__riscos) || defined(__riscos__) || defined(RISC_OS)
+    // RISC OS is OS 0
+    #define OS OS_RISCOS
+    #define OS_TYPE 0
+#elif defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
+    // Windows is OS 1
+    #define OS OS_WINDOWS
+    #define OS_TYPE 2
+#elif defined(__os2__) || defined(__OS2__) || defined(OS2) || defined(_OS2)
+    // OS/2 is OS 2
+    #define OS OS_OS2
+    #define OS_TYPE 1
+#elif defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__)
+    // Linux is OS 3
+    #define OS OS_LINUX
+    #define OS_TYPE 1
+#elif defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__bsdi__) || defined(__DragonFly__)
+    // BSD is OS 4
+    #define OS OS_BSD
+    #define OS_TYE 1
+#elif defined(__APPLE__) || defined(__MACH__)
+    // Mac OS is OS 5
+    #define OS OS_MACOS
+    #define OS_TYPE 1
+#elif defined(__sun) || defined(sun) || defined(__sun__)
+    // Solaris is OS 6
+    #define OS OS_SOLARIS
+    #define OS_TYPE 1
+#elif defined(__hpux) || defined(__hpux__)
+    // HP-UX is OS 7
+    #define OS OS_HPUX
+    #define OS_TYPE 1
+#elif defined(__HAIKU__) || defined(__HAIKU)
+    // Haiku is OS 8
+    #define OS OS_HAIKU
+    #define OS_TYPE 1
+#elif defined(__BEOS__) || defined(__beos__)
+    // BeOS is OS 9
+    #define OS OS_BEOS
+    #define OS_TYPE 1
+#elif defined(__QNX__) || defined(__QNXNTO__)
+    // QNX is OS 10
+    #define OS OS_QNX
+    #define OS_TYPE 1
+#elif defined(__tru64__) || defined(_SYSTYPE_OSF1)
+    // Tru64 UNIX is OS 11
+    #define OS OS_TRU64
+    #define OS_TYPE 1
+#elif defined(__unix__) || defined(__unix) || defined(unix) || defined(__UNIX__)
+    // UNIX is OS 12
+    #define OS OS_UNIX
+    #define OS_TYPE 1
+#elif defined(_AIX) || defined(__TOS_AIX__) || defined(__aix__) || defined(__aix)
+    // AIX is OS 13
+    #define OS OS_AIX
+    #define OS_TYPE 1
+#elif defined(__amigaos__) || defined(__amigaos)
+    // AmigaOS is OS 14
+    #define OS OS_AMIGAOS
+    #define OS_TYPE 1
+#elif defined(__MORPHOS__) || defined(__morphos__)
+    // MorphOS is OS 15
+    #define OS OS_MORPHOS
+    #define OS_TYPE 1
+#elif defined(__SYLLABLE__) || defined(__SYLLABLE)
+    // Syllable is OS 16
+    #define OS OS_SYLLABLE
+    #define OS_TYPE 1
+#elif defined(__VMS) || defined(VMS) || defined(__VMS_VER)
+    // OpenVMS is OS 17
+    #define OS OS_VMS
+    #define OS_TYPE 1
+#else
+    // Unknown OS
+    #define OS -1
+    #define OS_TYPE -1
+#endif
+
+#if defined(__arm__) || defined(__TARGET_ARCH_ARM) || defined(__arm)
+    // ARM architecture
+    #define ARCH 0
+    #define ARCH_BITS 32
+    #define ARCH_TYPE 0
+#elif defined(__aarch64__) || defined(__arm64__) || defined(__ARM64__) || defined(__ARM_ARCH_8A__)
+    // ARM 64 bit architecture
+    #define ARCH 1
+    #define ARCH_BITS 64
+    #define ARCH_TYPE 0
+#elif defined(__i386__) || defined(_M_IX86) || defined(__X86__) || defined(_X86_) || defined(__I86__) || defined(__INTEL__) || defined(__386)
+    // x86 architecture
+    #define ARCH 2
+    #define ARCH_BITS 32
+    #define ARCH_TYPE 1
+#elif defined(__x86_64__) || defined(_M_X64)
+    // x86 64 bit architecture
+    #define ARCH 3
+    #define ARCH_BITS 64
+    #define ARCH_TYPE 1
+#elif defined(__mips__) || defined(__mips) || defined(__MIPS__)
+    // MIPS architecture
+    #define ARCH 4
+    #define ARCH_BITS 32
+    #define ARCH_TYPE 0
+#elif defined(__powerpc__) || defined(__powerpc) || defined(__POWERPC__) || defined(__ppc__) || defined(__PPC__) || defined(__power__)
+    // PowerPC 32 architecture
+    #define ARCH 5
+    #define ARCH_BITS 32
+    #define ARCH_TYPE 0
+#elif defined(__powerpc64__) || defined(__ppc64__) || defined(__PPC64__)
+    // PowerPC 64 architecture
+    #define ARCH 5
+    #define ARCH_BITS 64
+    #define ARCH_TYPE 0
+#elif defined(__sparc__) || defined(__sparc)
+    // SPARC architecture
+    #define ARCH 6
+    #define ARCH_BITS 32
+    #define ARCH_TYPE 0
+#elif defined(__hppa__) || defined(__HPPA__)
+    // HP PA-RISC architecture
+    #define ARCH 7
+    #define ARCH_BITS 32
+    #define ARCH_TYPE 0
+#elif defined(__s390__) || defined(__s390x__)
+    // IBM S/390 architecture
+    #define ARCH 8
+    #define ARCH_BITS 32
+    #define ARCH_TYPE 0
+#elif defined(__alpha__) || defined(__alpha)
+    // DEC Alpha architecture
+    #define ARCH 9
+    #define ARCH_BITS 64
+    #define ARCH_TYPE 0
+#elif defined(__ia64__) || defined(_IA64) || defined(__IA64__) || defined(__ia64) || defined(_M_IA64) || defined(__itanium__)
+    // Intel Itanium architecture
+    #define ARCH 10
+    #define ARCH_BITS 64
+    #define ARCH_TYPE 0
+#elif defined(__m68k__) || defined(M68000)
+    // Motorola 68000 architecture
+    #define ARCH 11
+    #define ARCH_BITS 32
+    #define ARCH_TYPE 0
+#elif defined(__sh__) || defined(__sh) || defined(SHx)
+    // SuperH 32 architecture
+    #define ARCH 12
+    #define ARCH_BITS 32
+    #define ARCH_TYPE 0
+#elif defined(__sh64__) || defined(__sh64) || defined(SHx64)
+    // SuperH 64 architecture
+    #define ARCH 12
+    #define ARCH_BITS 64
+    #define ARCH_TYPE 0
+#elif defined(__m32r__) || defined(__m32rx__)
+    // Renesas M32R architecture
+    #define ARCH 13
+    #define ARCH_BITS 32
+    #define ARCH_TYPE 0
+#elif defined(__arc__) || defined(__arc)
+    // ARC architecture
+    #define ARCH 14
+    #define ARCH_BITS 32
+    #define ARCH_TYPE 0
+#elif defined(__nds32__) || defined(__NDS32__)
+    // Andes NDS32 architecture
+    #define ARCH 15
+    #define ARCH_BITS 32
+    #define ARCH_TYPE 0
+#elif defined(__riscv64) || defined(__riscv64__)
+    // RISC-V 64 bit architecture
+    #define ARCH 17
+    #define ARCH_BITS 64
+    #define ARCH_TYPE 0
+#elif defined(__riscv) || defined(__riscv__)
+    // RISC-V architecture
+    #define ARCH 16
+    #define ARCH_BITS 32
+    #define ARCH_TYPE 0
+#else
+    // Unknown architecture
+    #define ARCH -1
+    #define ARCH_BITS 32
+    #define ARCH_TYPE 1
+#endif
+
+#define CLANG 0
+#define GCC 1
+#define NORCROFT 2
+#define MSVC 3
+
+#if defined(__clang__) || defined(__clang)
+    // Clang compiler
+    #define COMPILER CLANG
+    #define COMPILER_TYPE 0
+    #define CLANG_VERSION (__clang_major__ * 10000 + __clang_minor__ * 100 + __clang_patchlevel__)
+#define GCC_VERSION (CLANG_VERSION)
+#elif defined(__GNUC__) || defined(__GNUC)
+    // GCC compiler
+    #define COMPILER GCC
+    #define COMPILER_TYPE 0
+    #define GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
+#elif defined(__CC_NORCROFT) || defined(__CC_NORCROFT__)
+    // Norcroft compiler
+    #define COMPILER NORCROFT
+    #define COMPILER_TYPE 0
+#elif defined(_MSC_VER) || defined(_MSC_VER_)
+    // MSVC compiler
+    #define COMPILER MSVC
+    #define COMPILER_TYPE 1
+#else
+    // Unknown compiler
+    #define COMPILER -1
+    #define COMPILER_TYPE -1
+#endif
+#ifndef GCC_VERSION
+#define GCC_VERSION 1000000000
+#endif
+
+
+
+
+
+#endif // COMMON_H
+// src/h/common
