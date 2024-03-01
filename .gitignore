@@ -5,4 +5,7 @@
 *.orig
 .DS_Store
 ux-src/
+**/o/
+**/*.o
+**/*.a
 

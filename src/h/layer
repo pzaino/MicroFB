@@ -37,7 +37,8 @@
 typedef uint32_t color_t; // 32-bit color
 typedef uint32_t pixel_t; // 32-bit pixel, assuming it represents dimensions
 
-class Layer {
+class Layer
+{
   private:
     std::shared_ptr<MemoryManager> currentMemoryManager;
     std::shared_ptr<RenderStrategy> currentRenderStrategy;
