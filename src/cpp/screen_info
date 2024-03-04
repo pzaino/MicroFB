@@ -29,6 +29,5 @@
 #endif
 #include "mem_manager.h"
 #include "layer.h"
-#include "render_strategy.h"
-
+#include "fb.h"
 

@@ -1,0 +1,236 @@
+/*
+ * This file is part of:
+ *      MicroFB, a minimal framebuffer library for RISC OS
+ *
+ * Description:
+ *      This project aims to provide a simple and efficient way to manage
+ *      the framebuffer on RISC OS using C++11. It abstracts the direct
+ *      interaction with the GraphicsV API, offering a higher-level
+ *      interface for drawing operations and framebuffer manipulation.
+ *
+ * Author:
+ *     Paolo Fabio Zaino, all rights reserved.
+ * Distributed under License:
+ *      CDDL v1.1 (Common Development and Distribution License Version
+ *      1.1) The use of this project is subject to the terms of the
+ *      CDDL v1.1. This project can be used and distributed according
+ *      to the terms of this license. For details on the CDDL v1.1,
+ *      please refer to the official license documentation.
+ */
+
+#ifndef ASF_HANDLER_HPP
+#define ASF_HANDLER_HPP
+
+// This header contains the definition of the AcornSprite and AcornSpriteFile
+// classes. These classes are used to handle the Acorn Sprite File (ASF) format
+// used by RISC OS to store sprite images.
+
+#include <memory>
+#include <vector>
+#include <cstring>
+#include <algorithm>
+
+#include "common.h"
+
+// AcornSprite class, used to handle a single Acorn Sprite image. It provides
+// methods to manipulate the image, mask and palette, as well as to draw
+// graphics primitives and text on the image.
+class AcornSprite {
+  public:
+    // Each Palette Entry is a pair of colours that are flashed on the screen
+    // Each Palette value is  of the form 0x00RRGGBB
+    //  0 -  7 | Not used
+    //  8 - 15 | Amount of Red
+    // 16 - 23 | Amount of Green
+    // 24 - 31 | Amount of Blue
+    struct PaletteEntry {
+        uint32_t firstColor;               // First colour of flashing pair
+        uint32_t secondColor;              // Second colour of flashing pair
+
+        bool operator==(const PaletteEntry& other) const;
+    };
+
+    struct SpriteControlBlock {            // Word | Description
+        uint32_t nextSpriteOffset;         //    0 | Offset to next sprite control block (from here)
+        char name[13];                     //  1-3 | Sprite Name (Including null terminator)
+        uint32_t widthInWordsMinusOne;     //    4 | Width in words minus one
+        uint32_t heightInScanlines;        //    5 | Height in scanlines
+        uint32_t firstBitUsed;             //    6 | First bit used (0 for new sprites)
+        uint32_t lastBitUsed;              //    7 | Last bit on the right edge of the sprite
+        uint32_t imageOffset;              //    8 | Offset to image data
+        uint32_t maskOffset;               //    9 | Offset to sprite mask
+        uint32_t mode;                     //   10 | Sprite mode (screen mode for old sprites)
+        std::vector<PaletteEntry> palette; //    n | Optional palette data, vector of PaletteEntry
+    };
+
+    // Constructors
+    AcornSprite();
+    AcornSprite(uint32_t width, uint32_t height, uint32_t mode);
+    AcornSprite(const SpriteControlBlock& controlBlock);
+    AcornSprite(const AcornSprite &other);
+    AcornSprite(AcornSprite&& other) noexcept;
+
+    // Operators
+    AcornSprite& operator=(const AcornSprite &other);
+    AcornSprite& operator=(AcornSprite &&other) noexcept;
+    bool operator==(const AcornSprite &other) const;
+
+    // Destructors
+    ~AcornSprite();
+
+    // Control block methods
+    int setControlBlockField(const std::string& fieldName,
+                             uint32_t value);
+    uint32_t getControlBlockFieldN(const std::string& fieldName) const;
+
+    int setControlBlockField(const std::string& fieldName,
+                             const std::string& value);
+    const std::string getControlBlockFieldS(const std::string& fieldName) const;
+
+    void setControlBlockField(const std::string& fieldName,
+                              const std::vector<PaletteEntry>& value);
+    const std::vector<PaletteEntry>& getControlBlockFieldV(const std::string& fieldName) const;
+
+    const SpriteControlBlock& getControlBlock() const;
+    void setControlBlock(const SpriteControlBlock& controlBlock);
+
+    // Quick access to control block fields
+    void setSpriteName(const std::string& name);
+    const std::string getSpriteName() const;
+
+    void setNextSpriteOffset(uint32_t nextSpriteOffset);
+    uint32_t getNextSpriteOffset() const;
+
+    void setWidth(uint32_t widthInWordsMinusOne);
+    uint32_t getWidth() const;
+
+    void setHeight(uint32_t heightInScanlines);
+    uint32_t getHeight() const;
+
+    //void setFirstBitUsed(uint32_t firstBitUsed);
+    //uint32_t getFirstBitUsed() const;
+
+    //void setLastBitUsed(uint32_t lastBitUsed);
+    //uint32_t getLastBitUsed() const;
+
+    //void setImageOffset(uint32_t imageOffset);
+    //uint32_t getImageOffset() const;
+
+    //void setMaskOffset(uint32_t maskOffset);
+    //uint32_t getMaskOffset() const;
+
+    void setMode(uint32_t mode);
+    uint32_t getMode() const;
+
+    // Mask
+    const std::vector<uint8_t>& getMask() const;
+    int       setMask(const std::vector<uint8_t>& maskData);
+    bool      hasMask() const;
+    int    resizeMask(size_t newSize);
+    int     clearMask(uint8_t value);
+
+    // Palette
+    int    setPalette(const std::vector<PaletteEntry>& palette);
+    const std::vector<PaletteEntry>& getPalette() const;
+    bool   hasPalette() const;
+    int resizePalette(size_t newSize);
+
+    // Image
+    int   resizeImage(size_t newSize);
+    const std::vector<uint8_t>& getImage() const;
+    size_t getImageSize() const;
+    void     setImage(const std::vector<uint8_t>& imageData);
+    int      setPixel(pixel_t x, pixel_t y, color_t value);
+    color_t  getPixel(pixel_t x, pixel_t y) const;
+    int    clearImage(color_t color);
+
+    // Image manipulation
+    //int        rotate(float angle);
+    //int         scale(float factor);
+    //int          flip(bool horizontal, bool vertical);
+    //int          crop(pixel_t x, pixel_t y, pixel_t width, pixel_t height);
+    //int        resize(pixel_t width, pixel_t height);
+
+    // Graphics primitives
+    int      drawLine(pixel_t x1, pixel_t y1, pixel_t x2, pixel_t y2, color_t color);
+    int      drawRect(pixel_t x, pixel_t y, pixel_t width,
+                      pixel_t height, color_t color);
+    int      fillRect(pixel_t x, pixel_t y, pixel_t width,
+                      pixel_t height, color_t color);
+    int    drawCircle(pixel_t x, pixel_t y, pixel_t radius, color_t color);
+    int    fillCircle(pixel_t x, pixel_t y, pixel_t radius, color_t color);
+    int   drawEllipse(pixel_t x, pixel_t y, pixel_t radiusX,
+                      pixel_t radiusY, color_t color);
+    int   fillEllipse(pixel_t x, pixel_t y, pixel_t radiusX, pixel_t radiusY,
+                      color_t color);
+    int   drawPolygon(const std::vector<pixel_t>& points,
+                      color_t color);
+    int   fillPolygon(const std::vector<pixel_t>& points,
+                      color_t color);
+    int      drawChar(pixel_t x, pixel_t y, char c, color_t color,
+                      std::string font = "SystemFont", int size = 12,
+                      float rotation = 0.0f);
+    int      drawText(pixel_t x, pixel_t y, const std::string& text, color_t color,
+                      std::string font = "SystemFont", int size = 12,
+                      float rotation = 0.0f);
+
+  private:
+    SpriteControlBlock controlBlock;
+    std::vector<uint8_t> imageData;
+    std::vector<uint8_t> maskData; // Optional
+};
+
+// AcornSpriteFile class, used to handle the Acorn Sprite File (ASF) format
+// used by RISC OS to store sprite images.
+class AcornSpriteFile {
+  public:
+    struct FileControlBlock {
+        uint32_t byteOffsetToLastSprite;     // Offset to last sprite control block
+        uint32_t numSprites;                 // Number of sprites in the file
+        uint32_t firstSpriteOffset;          // Byte offset to first sprite
+        uint32_t firstFreeWordOffset;        // Byte offset to first free word (ie byte after last sprite)
+        std::vector<uint8_t> ExtensionWords; // Optional extension words
+    };
+
+    // Constructors
+    AcornSpriteFile();
+    AcornSpriteFile(const std::string& filePath);
+
+    // Control block methods
+    const FileControlBlock& getControlBlock() const;
+    int setControlBlockFieldN(const std::string& fieldName,
+                              uint32_t value);
+    int resizeExtensionWords(size_t newSize);
+
+    // Data loading and saving
+    int loadFromFile(const std::string& filePath);
+    int saveToFile(const std::string& filePath) const;
+    int clear();
+
+    // Sprite manipulation
+    int addSprite(const std::shared_ptr<AcornSprite>& sprite); // adds a sprite
+    int setSprite(size_t index, const std::shared_ptr<AcornSprite>& sprite); // sets a sprite by index
+    int setSprite(const std::string& name, const std::shared_ptr<AcornSprite>& sprite); // sets a sprite by name
+    int setSprites(const std::vector<std::shared_ptr<AcornSprite>>& sprites); // sets all sprites
+    int swapSprites(size_t index1, size_t index2); // swaps two sprites by index
+    int swapSprites(const std::string& name1, const std::string& name2); // swaps two sprites by name
+    int insertSprite(size_t index, const std::shared_ptr<AcornSprite>& sprite); // inserts a sprite by index
+    int insertSprite(const std::string& name, const std::shared_ptr<AcornSprite>& sprite); // inserts a sprite by name
+
+    int removeSprite(size_t index); // removes a sprite by index
+    int removeSprite(const std::string& name); // removes a sprite by name
+
+    // Quick access to sprites
+    int getSpriteIndex(const std::string& name) const; // gets the index of a sprite by name
+    size_t getNumSprites() const; // gets the number of sprites
+
+    const std::vector<std::shared_ptr<AcornSprite>>& getSprites() const; // gets all sprites
+    const std::shared_ptr<AcornSprite>& getSprite(size_t index) const; // gets a single sprite
+    const std::shared_ptr<AcornSprite>& getSprite(const std::string& name) const; // gets a single sprite by name
+
+  private:
+    FileControlBlock controlBlock;
+    std::vector<std::shared_ptr<AcornSprite>> sprites;
+};
+
+#endif // ASF_HANDLER_HPP

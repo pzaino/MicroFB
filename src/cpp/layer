@@ -73,7 +73,8 @@ void Layer::clear(color_t color)
 }
 
 // Direct pixel manipulation
-void Layer::setPixel(pixel_t x, pixel_t y, color_t color) {
+void Layer::setPixel(pixel_t x, pixel_t y, color_t color)
+{
     // Use the render strategy to set the pixel
     currentRenderStrategy->setPixel(*this, x, y, color);
 }
@@ -130,7 +131,8 @@ void Layer::fillEllipse(pixel_t x, pixel_t y, pixel_t rx,
 }
 
 // Draw a polygon
-void Layer::drawPolygon(const std::vector<pixel_t>& points, color_t color) {
+void Layer::drawPolygon(const std::vector<pixel_t>& points, color_t color)
+{
     // Use the render strategy to draw the polygon
     currentRenderStrategy->drawPolygon(*this, points, color);
 }

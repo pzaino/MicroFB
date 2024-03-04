@@ -2,33 +2,33 @@
 # (c) 2024 by Paolo Fabio Zaino, all rights reserved
 # Licensed under the CDDL v1.1 License
 
-CC = g++
+CXX = g++
 PTHREAD = -pthread
 EXT_SYM = .
-CFLAGS_BASE = -Wall -Wextra -pedantic -std=gnu++11 -O2
+CFLAGS_BASE = -Wall -Wextra -pedantic -std=c++11 -O2
 LDFLAGS_EXTRA =
 extras =
 server =
 client =
 
 LIB_NAME = MicroFB
-LIB_SOURCES = fb.cpp layer.cpp render_strategy.cpp
+LIB_SOURCES = fb.cpp layer.cpp render_strategy.cpp screen_info.cpp asf_handler.cpp
 LIB_OBJECTS = $(LIB_SOURCES:.cpp=.o)
 LIB_OUT = lib$(LIB_NAME)$(EXT_SYM)a
-LIB_LINK = -L./ -l$(LIB_NAME)
+LIB_LINK = -L. -l$(LIB_NAME)
 
 ifeq ($(OS), RISC_OS)
-    CC = g++
+    CXX = g++
 #    PTHREAD = -lpthread
     PTHREAD =
     EXT_SYM =.
-    CFLAGS_BASE = -Wall -Wextra -pedantic -std=gnu++11
+    CFLAGS_BASE = -Wall -Wextra -pedantic -std=c++11
     LDFLAGS_EXTRA = -lgcc -lstdlib_extras
     #extras = stdlib_extras
     LIB_LINK = -l$(LIB_NAME)
 endif
 ifeq ($(OS), Darwin)
-    CC = /opt/homebrew/bin/g++-13
+    #CXX = /opt/homebrew/bin/g++-13
     PTHREAD = -pthread
     LIB_LINK = $(LIB_OUT)
 endif
@@ -48,15 +48,15 @@ $(LIB_OUT): $(LIB_OBJECTS)
 	ar rcs $(LIB_OUT) $(LIB_OBJECTS)
 
 $(LIB_OBJECTS): $(LIB_SOURCES)
-	$(CC) $(CFLAGS) -c $(LIB_SOURCES)
+	$(CXX) $(CFLAGS) -c $(LIB_SOURCES)
 
 # Server executable
 #$(server): Server.cpp $(LIB_OUT) $(extras)
-#	$(CC) $(CFLAGS) -o $(server) Server.cpp $(LIB_LINK) $(LDFLAGS_EXTRA)
+#	$(CXX) $(CFLAGS) -o $(server) Server.cpp $(LIB_LINK) $(LDFLAGS_EXTRA)
 
 # Client executable
 #$(client): Client.cpp $(LIB_OUT) $(extras)
-#	$(CC) $(CFLAGS) -o $(client) Client.cpp $(LIB_LINK) $(LDFLAGS_EXTRA)
+#	$(CXX) $(CFLAGS) -o $(client) Client.cpp $(LIB_LINK) $(LDFLAGS_EXTRA)
 
 .PHONY: clean
 

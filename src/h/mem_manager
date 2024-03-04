@@ -23,6 +23,13 @@
 
 #include <cstddef>
 
+// Include MicroFB libraries
+#include "common.h"
+#if GCC_VERSION < 50000
+// Include my own C++ STDLib extras for compatibility with older GCC versions
+//#include "stdlib_extras.h"
+#endif
+
 // Abstracted memory manager interface
 class MemoryManager
 {

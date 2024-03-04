@@ -1,0 +1,1331 @@
+/*
+ * This file is part of:
+ *      MicroFB, a minimal framebuffer library for RISC OS
+ *
+ * Description:
+ *      This project aims to provide a simple and efficient way to manage
+ *      the framebuffer on RISC OS using C++11. It abstracts the direct
+ *      interaction with the GraphicsV API, offering a higher-level
+ *      interface for drawing operations and framebuffer manipulation.
+ *
+ * Author:
+ *     Paolo Fabio Zaino, all rights reserved.
+ * Distributed under License:
+ *      CDDL v1.1 (Common Development and Distribution License Version
+ *      1.1) The use of this project is subject to the terms of the
+ *      CDDL v1.1. This project can be used and distributed according
+ *      to the terms of this license. For details on the CDDL v1.1,
+ *      please refer to the official license documentation.
+ */
+
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <cstring>
+#include <cmath>
+
+// Include MicroFB libraries
+#include "common.h"
+#if GCC_VERSION < 50000
+// Include my own C++ STDLib extras for compatibility with older GCC versions
+//#include "stdlib_extras.h"
+#endif
+#include "asf_handler.h"
+
+const std::string prepareString(std::string str, uint32_t flags) {
+  // Remove leading and trailing whitespaces
+  str = str.substr(str.find_first_not_of(" \t\n\r\f\v"));
+  str = str.substr(0, str.find_last_not_of(" \t\n\r\f\v") + 1);
+
+  // Convert to lower case
+  if (flags & 0x01) {
+    std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+  }
+
+  return str;
+}
+
+// Get the character bitmap
+std::vector<uint8_t> getCharBitmap(char c, std::string font, int size)
+{
+  // Get the character bitmap
+  std::vector<uint8_t> charBitmap;
+
+  // Get the character bitmap from the font
+  if (font == "SystemFont")
+  {
+    // Get the character bitmap from the system font
+    // charBitmap = getSystemFontCharBitmap(c, size);
+    (void)c; // Unused for now
+    (void)size; // Unused for now
+    charBitmap = {};
+  }
+  else
+  {
+    // Get the character bitmap from the specified font
+    // charBitmap = getCustomFontCharBitmap(c, font, size);
+    (void)c; // Unused for now
+    (void)size; // Unused for now
+    charBitmap = {};
+  }
+
+  return charBitmap;
+}
+
+// Load a Sprite file from disk
+static int loadSpriteFile(const std::string& filePath,
+			                    AcornSpriteFile *spriteFile = nullptr)
+{
+  if (spriteFile == nullptr)
+  {
+    throw std::runtime_error("Invalid sprite file object");
+  }
+
+  std::ifstream file(filePath, std::ios::binary);
+  if (!file)
+  {
+    throw std::runtime_error("Could not open sprite file");
+  }
+
+  // Read the sprite file header
+  uint32_t header_value;
+  //file.read(reinterpret_cast<char*>(&header_value), sizeof(header_value));
+  spriteFile->setControlBlockFieldN("byteOffsetToLastSprite", 0);
+  file.read(reinterpret_cast<char*>(&header_value), sizeof(header_value));
+  spriteFile->setControlBlockFieldN("numSprites", header_value);
+  file.read(reinterpret_cast<char*>(&header_value), sizeof(header_value));
+  spriteFile->setControlBlockFieldN("firstSpriteOffset", header_value);
+  file.read(reinterpret_cast<char*>(&header_value), sizeof(header_value));
+  spriteFile->setControlBlockFieldN("firstFreeWordOffset", header_value);
+  if (spriteFile->getControlBlock().firstSpriteOffset > 4 ) {
+    // We need to read the Extension words
+    spriteFile->resizeExtensionWords(4);
+    // file.read(reinterpret_cast<char*>(spriteFile->getControlBlock().ExtensionWords.data()), 4 * sizeof(header_value));
+  }
+
+  // Read the sprites
+  uint32_t maxSprites = spriteFile->getControlBlock().numSprites;
+  while (!file.eof() && maxSprites-- > 0)
+  {
+    // Create a new Sprite
+    auto sprite = std::make_shared<AcornSprite>();
+    uint32_t value; // Temporary variable for reading numeric values
+    char name[13];  // Temporary variable for reading the sprite name
+
+    // Load control block
+    std::cout << "Loading sprite's control block" << std::endl;
+
+    file.read(reinterpret_cast<char*>(&value), sizeof(value));
+    sprite->setControlBlockField("nextSpriteOffset", value);
+
+    // Read and set the sprite name
+    file.read(name, 12);
+    name[12] = '\0'; // Ensure null-termination
+    sprite->setControlBlockField("name", std::string(name));
+
+    // Read and set widthInWordsMinusOne
+    file.read(reinterpret_cast<char*>(&value), sizeof(value));
+    sprite->setControlBlockField("widthinwordsminusone", value);
+
+    // Read and set heightInScanlines
+    file.read(reinterpret_cast<char*>(&value), sizeof(value));
+    sprite->setControlBlockField("heightinscanlines", value);
+
+    // Read and set firstBitUsed
+    file.read(reinterpret_cast<char*>(&value), sizeof(value));
+    sprite->setControlBlockField("firstbitused", value);
+
+    // Read and set lastBitUsed
+    file.read(reinterpret_cast<char*>(&value), sizeof(value));
+    sprite->setControlBlockField("lastbitused", value);
+
+    // Read and set imageOffset
+    file.read(reinterpret_cast<char*>(&value), sizeof(value));
+    sprite->setControlBlockField("imageoffset", value);
+
+    // Read and set maskOffset
+    file.read(reinterpret_cast<char*>(&value), sizeof(value));
+    sprite->setControlBlockField("maskoffset", value);
+
+    // Read and set mode
+    file.read(reinterpret_cast<char*>(&value), sizeof(value));
+    sprite->setControlBlockField("mode", value);
+
+    // Optionally load palette if present
+    if (sprite->getControlBlockFieldN("mode") & 0x8000)
+    {
+      // Load palette data
+      std::cout << "Loading sprite's palette" << std::endl;
+
+      uint32_t paletteSize = 1 << ((sprite->getControlBlockFieldN("mode") & 0x1F00) >> 8);
+      sprite->resizePalette(paletteSize);
+      std::vector<AcornSprite::PaletteEntry> paletteData(paletteSize);
+      file.read(reinterpret_cast<char*>(paletteData.data()), paletteData.size() * sizeof(AcornSprite::PaletteEntry));
+      sprite->setControlBlockField("palette", paletteData);
+    }
+
+    // Load sprite image data
+    std::cout << "Loading sprite's image data" << std::endl;
+    size_t imageDataSize = (sprite->getControlBlockFieldN("widthInWordsMinusOne") + 1) * sprite->getControlBlockFieldN("heightInScanlines") * 4; // 4 bytes per word
+    sprite->resizeImage(imageDataSize);
+    std::vector<uint8_t> imageData(imageDataSize);
+    file.seekg(sprite->getControlBlockFieldN("imageOffset"), std::ios::beg);
+    file.read(reinterpret_cast<char*>(imageData.data()), imageData.size());
+    sprite->setImage(imageData);
+
+    // Optionally load mask data if present and different from image offset
+    if (sprite->getControlBlockFieldN("maskOffset") != sprite->getControlBlockFieldN("imageOffset"))
+    {
+      // Load mask data
+      std::cout << "Loading sprite's mask data" << std::endl;
+      size_t maskDataSize = (sprite->getControlBlockFieldN("widthInWordsMinusOne") + 1) * sprite->getControlBlockFieldN("heightInScanlines") * 4; // 4 bytes per word
+      sprite->resizeMask(maskDataSize);
+      std::vector<uint8_t> maskData(maskDataSize);
+      file.seekg(sprite->getControlBlockFieldN("maskOffset"), std::ios::beg);
+      file.read(reinterpret_cast<char*>(maskData.data()), maskData.size());
+      sprite->setMask(maskData);
+    }
+
+    // Add sprite to file
+    std::cout << "Adding sprite to file" << std::endl;
+    spriteFile->addSprite(sprite);
+
+    // Check if there are more sprites
+    if (sprite->getControlBlockFieldN("nextSpriteOffset") == 0)
+    {
+      break;
+    }
+    break; // For now, only load the first sprite
+  }
+
+  file.close();
+  return 0;
+}
+
+// Save a Sprite file to disk
+static int saveSpriteFile(const std::string& filePath,
+			                     const AcornSpriteFile *spriteFile = nullptr)
+{
+  if (spriteFile == nullptr)
+  {
+    throw std::runtime_error("Invalid sprite file object");
+  }
+
+  std::ofstream file(filePath, std::ios::binary);
+  if (!file)
+  {
+    throw std::runtime_error("Could not open sprite file");
+  }
+
+  for (size_t i = 0; i < spriteFile->getSprites().size(); i++)
+  {
+    // Create a pointer to the current sprite
+    const auto& sprite = spriteFile->getSprites()[i];
+
+    // Save control block
+    file.write(reinterpret_cast<const char*>(&sprite->getControlBlock().nextSpriteOffset), sizeof(sprite->getControlBlock().nextSpriteOffset));
+    file.write(reinterpret_cast<const char*>(&sprite->getControlBlock().name), 12);
+    file.write(reinterpret_cast<const char*>(&sprite->getControlBlock().widthInWordsMinusOne), sizeof(sprite->getControlBlock().widthInWordsMinusOne));
+    file.write(reinterpret_cast<const char*>(&sprite->getControlBlock().heightInScanlines), sizeof(sprite->getControlBlock().heightInScanlines));
+    file.write(reinterpret_cast<const char*>(&sprite->getControlBlock().firstBitUsed), sizeof(sprite->getControlBlock().firstBitUsed));
+    file.write(reinterpret_cast<const char*>(&sprite->getControlBlock().lastBitUsed), sizeof(sprite->getControlBlock().lastBitUsed));
+    file.write(reinterpret_cast<const char*>(&sprite->getControlBlock().imageOffset), sizeof(sprite->getControlBlock().imageOffset));
+    file.write(reinterpret_cast<const char*>(&sprite->getControlBlock().maskOffset), sizeof(sprite->getControlBlock().maskOffset));
+    file.write(reinterpret_cast<const char*>(&sprite->getControlBlock().mode), sizeof(sprite->getControlBlock().mode));
+
+    // Optionally save palette if present
+    if (sprite->getControlBlock().mode & 0x8000)
+    {
+      // Save palette data
+      file.write(reinterpret_cast<const char*>(sprite->getControlBlock().palette.data()), sprite->getControlBlock().palette.size() * sizeof(AcornSprite::PaletteEntry));
+    }
+
+    // Save sprite image data
+    file.seekp(sprite->getControlBlock().imageOffset, std::ios::beg);
+    file.write(reinterpret_cast<const char*>(sprite->getImage().data()), sprite->getImage().size());
+
+    // Optionally save mask data if present and different from image offset
+    if (sprite->getControlBlock().maskOffset != sprite->getControlBlock().imageOffset)
+    {
+      // Save mask data
+      file.seekp(sprite->getControlBlock().maskOffset, std::ios::beg);
+      file.write(reinterpret_cast<const char*>(sprite->getMask().data()), sprite->getMask().size());
+    }
+  }
+
+  file.close();
+  return 0;
+}
+
+///////////////////////////////////////////////////////////////////
+// AcornSpriteFile class implementation
+///////////////////////////////////////////////////////////////////
+
+// Create an empty sprite file
+AcornSpriteFile::AcornSpriteFile()
+{
+  // Not much for now
+}
+
+// Create a new Acorn Sprite file from an existing file
+AcornSpriteFile::AcornSpriteFile(const std::string& filePath)
+{
+  this->loadFromFile(filePath);
+}
+
+// Get the control block of the sprite file
+const AcornSpriteFile::FileControlBlock& AcornSpriteFile::getControlBlock() const  {
+  return controlBlock;
+}
+
+// Set the control block of the sprite file
+int AcornSpriteFile::setControlBlockFieldN(const std::string& fieldName,
+                                           uint32_t value)
+{
+  // Prepare the field name
+  std::string fn = prepareString(fieldName, 0x01);
+
+  // Set the fn field value
+  if (fn == "byteoffsettolastsprite") {
+    controlBlock.byteOffsetToLastSprite = value;
+    return 0;
+  }
+
+  if (fn == "numsprites") {
+    controlBlock.numSprites = value;
+    return 0;
+  }
+
+  if (fn == "firstspriteoffset") {
+    controlBlock.firstSpriteOffset = value;
+    return 0;
+  }
+
+  if (fn == "firstfreewordoffset") {
+    controlBlock.firstFreeWordOffset = value;
+    return 0;
+  }
+
+  return -1;
+}
+
+int AcornSpriteFile::resizeExtensionWords(size_t newSize) {
+  if (newSize > controlBlock.ExtensionWords.size()) {
+    controlBlock.ExtensionWords.resize(newSize);
+    return 0;
+  }
+  return -1;
+}
+
+// Merge a sprite file into this one
+int AcornSpriteFile::loadFromFile(const std::string& filePath)
+{
+  return loadSpriteFile(filePath, this);
+}
+
+// Save the sprite file to disk
+int AcornSpriteFile::saveToFile(const std::string& filePath) const
+{
+  return saveSpriteFile(filePath, this);
+}
+
+// Get all the sprites
+const std::vector<std::shared_ptr<AcornSprite>>& AcornSpriteFile::getSprites() const
+{
+  return sprites;
+}
+
+// Get the number of sprites in this file
+size_t AcornSpriteFile::getNumSprites() const
+{
+  return sprites.size();
+}
+
+// Add a sprite to the file
+int AcornSpriteFile::addSprite(const std::shared_ptr<AcornSprite>& sprite)
+{
+    sprites.push_back(sprite);
+    // Recalculate the nextSpriteOffset for for the sprite before this one
+    if (sprites.size() > 1)
+    {
+      sprites[sprites.size() - 2]->setControlBlockField("nextSpriteOffset", sprite->getControlBlockFieldN("nextSpriteOffset") + sprites[sprites.size() - 2]->getControlBlockFieldN("nextSpriteOffset"));
+    }
+    return 0;
+}
+
+// Removes a sprite from the file by index
+int AcornSpriteFile::removeSprite(size_t index)
+{
+  if (index < sprites.size())
+  {
+    // Before removing the sprite, we need to recalculate the nextSpriteOffset
+    // for all the sprites that come after the one we are removing
+    for (size_t i = index + 1; i < sprites.size(); i++)
+    {
+      sprites[i]->setControlBlockField("nextSpriteOffset", sprites[i]->getControlBlockFieldN("nextSpriteOffset") - sprites[index]->getControlBlockFieldN("nextSpriteOffset"));
+    }
+    // Next, we can remove the sprite
+    sprites.erase(sprites.begin() + index);
+    return 0;
+  }
+  return -1;
+}
+
+// Removes a sprite from the file by name
+int AcornSpriteFile::removeSprite(const std::string& name)
+{
+  int index = getSpriteIndex(name);
+  if (index >= 0)
+  {
+    return removeSprite(index);
+  }
+  return -1;
+}
+
+// Get the index of a sprite by name
+int AcornSpriteFile::getSpriteIndex(const std::string& name) const
+{
+  for (size_t i = 0; i < sprites.size(); i++)
+  {
+    if (sprites[i]->getSpriteName() == name)
+    {
+      return i;
+    }
+  }
+
+  return -1;
+}
+
+// Get a sprite by name
+const std::shared_ptr<AcornSprite>& AcornSpriteFile::getSprite(const std::string& name) const
+{
+  int index = getSpriteIndex(name);
+  if (index >= 0)
+  {
+    return sprites[index];
+  }
+
+  return nullptr;
+}
+
+// Get a sprite by index
+const std::shared_ptr<AcornSprite>& AcornSpriteFile::getSprite(size_t index) const
+{
+  if (index < sprites.size())
+  {
+    return sprites[index];
+  }
+
+  return nullptr;
+}
+
+// Clear the sprite file
+int AcornSpriteFile::clear()
+{
+  sprites.clear();
+  return 0;
+}
+
+// Set the sprites
+int AcornSpriteFile::setSprites(const std::vector<std::shared_ptr<AcornSprite>>& sprites)
+{
+  this->sprites = sprites;
+  // Recalculate the nextSpriteOffset for all the sprites
+  for (size_t i = 1; i < sprites.size(); i++)
+  {
+    sprites[i]->setControlBlockField("nextSpriteOffset", sprites[i]->getControlBlockFieldN("nextSpriteOffset") + sprites[i - 1]->getControlBlockFieldN("nextSpriteOffset"));
+  }
+  return 0;
+}
+
+// Set a sprite by index
+int AcornSpriteFile::setSprite(size_t index, const std::shared_ptr<AcornSprite>& sprite)
+{
+  if (index < sprites.size())
+  {
+    // Remove the sprite
+    sprites[index] = sprite;
+    // Next, we need to recalculate the nextSpriteOffset for all the sprites that come after the one we are replacing
+    for (size_t i = index + 1; i < sprites.size(); i++)
+    {
+      sprites[i]->setControlBlockField("nextSpriteOffset", sprites[i]->getControlBlockFieldN("nextSpriteOffset") + sprites[index]->getControlBlockFieldN("nextSpriteOffset"));
+    }
+  }
+
+  return -1;
+}
+
+// Set a sprite by name
+int AcornSpriteFile::setSprite(const std::string& name, const std::shared_ptr<AcornSprite>& sprite)
+{
+  int index = getSpriteIndex(name);
+  if (index >= 0)
+  {
+    return setSprite(index, sprite);
+  }
+  return -1;
+}
+
+// Swap two sprites by index
+int AcornSpriteFile::swapSprites(size_t index1, size_t index2)
+{
+  if (index1 < sprites.size() && index2 < sprites.size())
+  {
+    // Swap the sprites
+    std::swap(sprites[index1], sprites[index2]);
+    // Next we need to recalculate the nextSpriteOffset for all the sprites that come after the one we are replacing
+    for (size_t i = std::min(index1, index2); i < sprites.size(); i++)
+    {
+      sprites[i]->setControlBlockField("nextSpriteOffset", sprites[i]->getControlBlockFieldN("nextSpriteOffset") + sprites[std::max(index1, index2)]->getControlBlockFieldN("nextSpriteOffset"));
+    }
+    return 0;
+  }
+  return -1;
+}
+
+// Swap two sprites by name
+int AcornSpriteFile::swapSprites(const std::string& name1, const std::string& name2)
+{
+  int index1 = getSpriteIndex(name1);
+  int index2 = getSpriteIndex(name2);
+  if (index1 >= 0 && index2 >= 0)
+  {
+    return swapSprites(index1, index2);
+  }
+  return -1;
+}
+
+// Insert a sprite at a specific index
+int AcornSpriteFile::insertSprite(size_t index, const std::shared_ptr<AcornSprite>& sprite)
+{
+  if (index <= sprites.size())
+  {
+    // Insert the sprite
+    sprites.insert(sprites.begin() + index, sprite);
+    // Next, we need to recalculate the nextSpriteOffset for all the sprites that come after the one we are inserting
+    for (size_t i = index + 1; i < sprites.size(); i++)
+    {
+      sprites[i]->setControlBlockField("nextSpriteOffset", sprites[i]->getControlBlockFieldN("nextSpriteOffset") + sprites[index]->getControlBlockFieldN("nextSpriteOffset"));
+    }
+    return 0;
+  }
+  return -1;
+}
+
+// Insert a sprite after another sprite
+int AcornSpriteFile::insertSprite(const std::string& name,
+                                  const std::shared_ptr<AcornSprite>& sprite)
+{
+  int index = getSpriteIndex(name);
+  if (index >= 0)
+  {
+    return insertSprite(index + 1, sprite);
+  }
+  return -1;
+}
+
+
+///////////////////////////////////////////////////////////////////
+// AcornSprite class implementation
+///////////////////////////////////////////////////////////////////
+
+// Create an empty sprite
+AcornSprite::AcornSprite()
+{
+  // Initialize the control block
+  controlBlock.nextSpriteOffset = 0;
+  controlBlock.widthInWordsMinusOne = 0;
+  controlBlock.heightInScanlines = 0;
+  controlBlock.firstBitUsed = 0;
+  controlBlock.lastBitUsed = 0;
+  controlBlock.imageOffset = 0;
+  controlBlock.maskOffset = 0;
+  controlBlock.mode = 0;
+  controlBlock.palette = {};
+  std::memset(controlBlock.name, 0, 12);
+  controlBlock.name[12] = '\0'; // Ensure null-terminated string
+  resizeImage(4); // 4 bytes per word
+  resizeMask(4); // 4 bytes per word
+}
+
+// Create a new Acorn Sprite from an existing control block
+AcornSprite::AcornSprite(const SpriteControlBlock& controlBlock)
+{
+  this->controlBlock = controlBlock;
+  resizeImage(4); // 4 bytes per word
+}
+
+// Create a new Acorn Sprite
+AcornSprite::AcornSprite(uint32_t width, uint32_t height, uint32_t mode)
+{
+  controlBlock.nextSpriteOffset = 0;
+  controlBlock.widthInWordsMinusOne = width - 1;
+  controlBlock.heightInScanlines = height;
+  controlBlock.firstBitUsed = 0;
+  controlBlock.lastBitUsed = 0;
+  controlBlock.imageOffset = 0;
+  controlBlock.maskOffset = 0;
+  controlBlock.mode = mode;
+  controlBlock.palette = {};
+  resizeImage(width * height * 4); // 4 bytes per word
+  resizeMask(width * height * 4); // 4 bytes per word
+}
+
+// Copy constructor
+AcornSprite::AcornSprite(const AcornSprite& other) :
+    controlBlock(other.controlBlock), // Assumes direct copy is safe and desired
+    imageData(other.imageData), // Copy of the vector
+    maskData(other.maskData) // Copy of the vector
+{}
+
+// Move constructor
+AcornSprite::AcornSprite(AcornSprite&& other) noexcept :
+    controlBlock(std::move(other.controlBlock)), // Move if controlBlock has movable resources
+    imageData(std::move(other.imageData)), // Move of the vector
+    maskData(std::move(other.maskData)) // Move of the vector
+{}
+
+// Copy assignment operator
+AcornSprite& AcornSprite::operator=(const AcornSprite& other)
+{
+  if (this != &other) {
+    controlBlock = other.controlBlock;
+    imageData = other.imageData;
+    maskData = other.maskData;
+  }
+  return *this;
+}
+
+// Move assignment operator
+AcornSprite& AcornSprite::operator=(AcornSprite&& other) noexcept
+{
+  if (this != &other) {
+    controlBlock = std::move(other.controlBlock);
+    imageData = std::move(other.imageData);
+    maskData = std::move(other.maskData);
+  }
+  return *this;
+}
+
+// Define equality operator for PaletteEntry
+bool AcornSprite::PaletteEntry::operator==(const AcornSprite::PaletteEntry& other) const {
+  return firstColor == other.firstColor && secondColor == other.secondColor;
+}
+
+// Equality operator
+bool AcornSprite::operator==(const AcornSprite &other) const {
+  // Compare control blocks
+  const auto& cb1 = this->getControlBlock();
+  const auto& cb2 = other.getControlBlock();
+
+  if (cb1.nextSpriteOffset != cb2.nextSpriteOffset ||
+    std::strcmp(cb1.name, cb2.name) != 0 ||
+    cb1.widthInWordsMinusOne != cb2.widthInWordsMinusOne ||
+    cb1.heightInScanlines != cb2.heightInScanlines ||
+    cb1.firstBitUsed != cb2.firstBitUsed ||
+    cb1.lastBitUsed != cb2.lastBitUsed ||
+    cb1.imageOffset != cb2.imageOffset ||
+    cb1.maskOffset != cb2.maskOffset ||
+    cb1.mode != cb2.mode ||
+    cb1.palette.size() != cb2.palette.size() ||
+    !std::equal(cb1.palette.begin(), cb1.palette.end(), cb2.palette.begin())) {
+    return false;
+  }
+
+  // Compare image data
+  if (this->getImage() != other.getImage()) {
+    return false;
+  }
+
+  // Compare mask data, if any
+  if (this->getMask() != other.getMask()) {
+    return false;
+  }
+
+  // If all checks passed, sprites are equal
+  return true;
+}
+
+// Destructor
+AcornSprite::~AcornSprite()
+{
+  // Not much for now
+}
+
+// Set the control block of the sprite
+int AcornSprite::setControlBlockField(const std::string& fieldName,
+                                      uint32_t value)
+{
+  // Prepare the field name
+  std::string fn = prepareString(fieldName, 0x01);
+
+  // Set the fn field value
+  if (fn == "nextspriteoffset") {
+    controlBlock.nextSpriteOffset = value;
+    return 0;
+  }
+
+  if (fn == "widthinwordsminusone") {
+    controlBlock.widthInWordsMinusOne = value;
+    return 0;
+  }
+
+  if (fn == "heightinscanlines") {
+    controlBlock.heightInScanlines = value;
+    return 0;
+  }
+
+  if (fn == "firstbitused") {
+    controlBlock.firstBitUsed = value;
+    return 0;
+  }
+
+  if (fn == "lastbitused") {
+    controlBlock.lastBitUsed = value;
+    return 0;
+  }
+
+  if (fn == "imageoffset") {
+    controlBlock.imageOffset = value;
+    return 0;
+  }
+
+  if (fn == "maskoffset") {
+    controlBlock.maskOffset = value;
+    return 0;
+  }
+
+  if (fn == "mode") {
+    controlBlock.mode = value;
+    return 0;
+  }
+
+  return -1;
+}
+
+// Get the control block field value
+uint32_t AcornSprite::getControlBlockFieldN(const std::string& fieldName) const
+{
+  // Prepare the field name
+  std::string fn = prepareString(fieldName, 0x01);
+
+  // Get the fn field value
+  if (fn == "nextspriteoffset") {
+    return controlBlock.nextSpriteOffset;
+  }
+
+  if (fn == "widthinwordsminusone") {
+    return controlBlock.widthInWordsMinusOne;
+  }
+
+  if (fn == "heightinscanlines") {
+    return controlBlock.heightInScanlines;
+  }
+
+  if (fn == "firstbitused") {
+    return controlBlock.firstBitUsed;
+  }
+
+  if (fn == "lastbitused") {
+    return controlBlock.lastBitUsed;
+  }
+
+  if (fn == "imageoffset") {
+    return controlBlock.imageOffset;
+  }
+
+  if (fn == "maskoffset") {
+    return controlBlock.maskOffset;
+  }
+
+  if (fn == "mode") {
+    return controlBlock.mode;
+  }
+
+  return 0;
+}
+
+// Set the control block field value
+int AcornSprite::setControlBlockField(const std::string& fieldName,
+                                      const std::string& value)
+{
+  // Prepare the field name
+  std::string fn = prepareString(fieldName, 0x01);
+
+  // Set the fn field value
+  if (fn == "name") {
+      this->setSpriteName(value);
+      return 0;
+  }
+
+  return -1;
+}
+
+// Get the control block field value
+const std::string AcornSprite::getControlBlockFieldS(const std::string& fieldName) const
+{
+  // Prepare the field name
+  std::string fn = prepareString(fieldName, 0x01);
+
+  // Get the fn field value
+  if (fn == "name") {
+      return controlBlock.name;
+  }
+
+  return "";
+}
+
+void AcornSprite::setControlBlockField(const std::string& fieldName,
+                                       const std::vector<PaletteEntry>& value)
+{
+  // Prepare the field name
+  std::string fn = prepareString(fieldName, 0x01);
+
+  // Set the fn field value
+  if (fn == "palette") {
+      controlBlock.palette = value;
+  }
+}
+
+// Get the control block PaletteEntry field values
+const std::vector<AcornSprite::PaletteEntry>& AcornSprite::getControlBlockFieldV(const std::string& fieldName) const
+{
+  // Prepare the field name
+  std::string fn = prepareString(fieldName, 0x01);
+
+  // Get the fn field value
+  if (fn == "palette") {
+      return controlBlock.palette;
+  }
+
+  return std::vector<AcornSprite::PaletteEntry>();
+}
+
+// Set the sprite name
+void AcornSprite::setSpriteName(const std::string& name)
+{
+  std::strncpy(controlBlock.name, name.c_str(), 12);
+  controlBlock.name[12] = '\0'; // Ensure null-terminated string
+}
+
+// Get the sprite name
+const std::string AcornSprite::getSpriteName() const
+{
+  return controlBlock.name;
+}
+
+// Set the sprite image data
+void AcornSprite::setImage(const std::vector<uint8_t>& imageData)
+{
+  this->imageData = imageData;
+}
+
+// Get the sprite image data
+const std::vector<uint8_t>& AcornSprite::getImage() const
+{
+  return imageData;
+}
+
+// Get the sprite image data size
+size_t AcornSprite::getImageSize() const
+{
+  return imageData.size();
+}
+
+// Set the sprite mask data
+int AcornSprite::setMask(const std::vector<uint8_t>& maskData)
+{
+  this->maskData = maskData;
+  return 0;
+}
+
+// Get the sprite mask data
+const std::vector<uint8_t>& AcornSprite::getMask() const
+{
+  return this->maskData;
+}
+
+// Check if the sprite has a mask
+bool AcornSprite::hasMask() const
+{
+  return this->maskData.size() > 0;
+}
+
+// Resize the sprite mask
+int AcornSprite::resizeMask(size_t newSize)
+{
+  this->maskData.resize(newSize);
+  return 0;
+}
+
+// Clear Mask
+int AcornSprite::clearMask(uint8_t value)
+{
+  // Clear the mask data using value
+  std::fill(this->maskData.begin(), this->maskData.end(), value);
+  return 0;
+}
+
+// Set the sprite palette
+int AcornSprite::setPalette(const std::vector<PaletteEntry>& palette)
+{
+  controlBlock.palette = palette;
+  return 0;
+}
+
+// Get the sprite palette
+const std::vector<AcornSprite::PaletteEntry>& AcornSprite::getPalette() const
+{
+  return controlBlock.palette;
+}
+
+// Check if the sprite has a palette
+bool AcornSprite::hasPalette() const
+{
+  return controlBlock.palette.size() > 0;
+}
+
+// Resize the sprite palette
+int AcornSprite::resizePalette(size_t newSize)
+{
+  controlBlock.palette.resize(newSize);
+  return 0;
+}
+
+// Resize the sprite image data
+int AcornSprite::resizeImage(size_t newSize)
+{
+  imageData.resize(newSize);
+  return 0;
+}
+
+// Set a pixel in the sprite image data
+int AcornSprite::setPixel(pixel_t x, pixel_t y, color_t color)
+{
+  if (x >= controlBlock.widthInWordsMinusOne ||
+      y >= controlBlock.heightInScanlines)
+  {
+    return -1;
+  }
+
+  // Calculate the pixel offset
+  size_t offset = (y * controlBlock.widthInWordsMinusOne + x) * 4;
+
+  // Set the pixel color
+  imageData[offset] = (color & 0xFF000000) >> 24;
+  imageData[offset + 1] = (color & 0x00FF0000) >> 16;
+  imageData[offset + 2] = (color & 0x0000FF00) >> 8;
+  imageData[offset + 3] = (color & 0x000000FF);
+
+  return 0;
+}
+
+// Get a pixel from the sprite image data
+color_t AcornSprite::getPixel(color_t x, color_t y) const
+{
+  if (x >= controlBlock.widthInWordsMinusOne ||
+      y >= controlBlock.heightInScanlines)
+  {
+    return 0;
+  }
+
+  // Calculate the pixel offset
+  size_t offset = (y * controlBlock.widthInWordsMinusOne + x) * 4;
+
+  // Get the pixel color
+  return (this->imageData[offset] << 24) |
+         (this->imageData[offset + 1] << 16) |
+         (this->imageData[offset + 2] << 8) |
+          this->imageData[offset + 3];
+}
+
+// Clear the sprite image data with a specific color
+int AcornSprite::clearImage(color_t color)
+{
+  // Clear the image data
+  std::fill(this->imageData.begin(), this->imageData.end(), color);
+  return 0;
+}
+
+// Draw a line in the sprite image data
+int AcornSprite::drawLine(pixel_t x1, pixel_t y1,
+                          pixel_t x2, pixel_t y2, color_t color)
+{
+  // Check if the line is horizontal
+  if (y1 == y2)
+  {
+    // Draw a horizontal line
+    for (uint32_t x = x1; x <= x2; x++)
+    {
+      setPixel(x, y1, color);
+    }
+  }
+  else if (x1 == x2)
+  {
+    // Draw a vertical line
+    for (uint32_t y = y1; y <= y2; y++)
+    {
+      setPixel(x1, y, color);
+    }
+  }
+  else
+  {
+    // Draw a diagonal line
+    float dx = x2 - x1;
+    float dy = y2 - y1;
+    float steps = (abs(dx) > abs(dy)) ? abs(dx) : abs(dy);
+    float xIncrement = dx / steps;
+    float yIncrement = dy / steps;
+    float x = x1;
+    float y = y1;
+
+    for (int i = 0; i <= steps; i++)
+    {
+      setPixel(x, y, color);
+      x += xIncrement;
+      y += yIncrement;
+    }
+  }
+
+  return 0;
+}
+
+// Draw a rectangle in the sprite image data
+int AcornSprite::drawRect(pixel_t x, pixel_t y,
+                          pixel_t w, pixel_t h, color_t color)
+{
+  // Draw the rectangle
+  for (uint32_t i = x; i < x + w; i++)
+  {
+    setPixel(i, y, color);
+    setPixel(i, y + h, color);
+  }
+
+  for (uint32_t i = y; i < y + h; i++)
+  {
+    setPixel(x, i, color);
+    setPixel(x + w, i, color);
+  }
+
+  return 0;
+}
+
+// Fill a rectangle in the sprite image data
+int AcornSprite::fillRect(pixel_t x, pixel_t y,
+                          pixel_t w, pixel_t h, color_t color)
+{
+  // Fill the rectangle
+  for (uint32_t i = x; i < x + w; i++)
+  {
+    for (uint32_t j = y; j < y + h; j++)
+    {
+      setPixel(i, j, color);
+    }
+  }
+
+  return 0;
+}
+
+// Draw a circle in the sprite image data
+int AcornSprite::drawCircle(pixel_t x, pixel_t y,
+                            pixel_t r, color_t color)
+{
+  // Draw the circle
+  int f = 1 - r;
+  int ddF_x = 1;
+  int ddF_y = -2 * r;
+  int x1 = 0;
+  int y1 = r;
+
+  setPixel(x, y + r, color);
+  setPixel(x, y - r, color);
+  setPixel(x + r, y, color);
+  setPixel(x - r, y, color);
+
+  while (x1 < y1)
+  {
+    if (f >= 0)
+    {
+      y1--;
+      ddF_y += 2;
+      f += ddF_y;
+    }
+    x1++;
+    ddF_x += 2;
+    f += ddF_x;
+
+    setPixel(x + x1, y + y1, color);
+    setPixel(x - x1, y + y1, color);
+    setPixel(x + x1, y - y1, color);
+    setPixel(x - x1, y - y1, color);
+    setPixel(x + y1, y + x1, color);
+    setPixel(x - y1, y + x1, color);
+    setPixel(x + y1, y - x1, color);
+    setPixel(x - y1, y - x1, color);
+  }
+
+  return 0;
+}
+
+// Fill a circle in the sprite image data
+int AcornSprite::fillCircle(pixel_t x, pixel_t y,
+                            pixel_t r, color_t color)
+{
+  // Fill the circle
+  for (uint32_t i = 0; i <= r; i++)
+  {
+    drawCircle(x, y, i, color);
+  }
+
+  return 0;
+}
+
+// Draw an ellipse in the sprite image data
+int AcornSprite::drawEllipse(pixel_t x, pixel_t y,
+                             pixel_t rx, pixel_t ry, color_t color)
+{
+  // Draw the ellipse
+  float dx, dy, d1, d2;
+
+  // Initial decision parameter of region 1
+  d1 = (ry * ry) - (rx * rx * ry) + (0.25 * rx * rx);
+  dx = 2 * ry * ry * x;
+  dy = 2 * rx * rx * y;
+
+  // For region 1
+  while (dx < dy)
+  {
+    // Print points based on 4-way symmetry
+    setPixel(x + x, y + y, color);
+    setPixel(-x + x, y + y, color);
+    setPixel(x + x, -y + y, color);
+    setPixel(-x + x, -y + y, color);
+
+    // Checking and updating value of decision parameter based on algorithm
+    if (d1 < 0)
+    {
+      x++;
+      dx = dx + (2 * ry * ry);
+      d1 = d1 + dx + (ry * ry);
+    }
+    else
+    {
+      x++;
+      y--;
+      dx = dx + (2 * ry * ry);
+      dy = dy - (2 * rx * rx);
+      d1 = d1 + dx - dy + (ry * ry);
+    }
+  }
+
+  // Decision parameter of region 2
+  d2 = ((ry * ry) * ((x + 0.5) * (x + 0.5))) + ((rx * rx) * ((y - 1) * (y - 1))) - (rx * rx * ry * ry);
+
+  // Plotting points of region 2
+  while (y > 0)
+  {
+    // Print points based on 4-way symmetry
+    setPixel(x + x, y + y, color);
+    setPixel(-x + x, y + y, color);
+    setPixel(x + x, -y + y, color);
+    setPixel(-x + x, -y + y, color);
+
+    // Checking and updating parameter value based on algorithm
+    if (d2 > 0)
+    {
+      y--;
+      dy = dy - (2 * rx * rx);
+      d2 = d2 + (rx * rx) - dy;
+    }
+    else
+    {
+      y--;
+      x++;
+      dx = dx + (2 * ry * ry);
+      dy = dy - (2 * rx * rx);
+      d2 = d2 + dx - dy + (rx * rx);
+    }
+  }
+
+  return 0;
+}
+
+// Fill an ellipse in the sprite image data
+int AcornSprite::fillEllipse(pixel_t  x, pixel_t  y,
+                             pixel_t rx, pixel_t ry, color_t color)
+{
+  // Fill the ellipse
+  for (uint32_t i = 0; i <= ry; i++)
+  {
+    drawEllipse(x, y, rx, i, color);
+  }
+
+  return 0;
+}
+
+// Draw a polygon in the sprite image data
+int AcornSprite::drawPolygon(const std::vector<pixel_t>& points, color_t color)
+{
+  // Draw the polygon
+  for (size_t i = 0; i < points.size(); i += 2)
+  {
+    drawLine(points[i], points[i + 1], points[(i + 2) % points.size()], points[(i + 3) % points.size()], color);
+  }
+
+  return 0;
+}
+
+// Fill a polygon in the sprite image data
+int AcornSprite::fillPolygon(const std::vector<pixel_t>& points, color_t color)
+{
+  // Fill the polygon
+  for (size_t i = 0; i < points.size(); i += 2)
+  {
+    drawLine(points[i], points[i + 1], points[(i + 2) % points.size()], points[(i + 3) % points.size()], color);
+  }
+
+  return 0;
+}
+
+// Draw a char in the sprite image data
+int AcornSprite::drawChar(pixel_t x, pixel_t y, char c, color_t color,
+                          std::string font, int size,
+                          float rotation)
+{
+  // Draw the character
+
+  // Get the character bitmap
+  std::vector<uint8_t> charBitmap = getCharBitmap(c, font, size);
+  (void)rotation; // Unused for now
+
+  // Draw the character bitmap
+  for (int i = 0; i < size; i++)
+  {
+    for (int j = 0; j < size; j++)
+    {
+      if (charBitmap[i * size + j] == 1)
+      {
+        setPixel(x + j, y + i, color);
+      }
+    }
+  }
+
+  return 0;
+}
+
+// Draw text in the sprite image data
+int AcornSprite::drawText(pixel_t x, pixel_t y,
+                          const std::string& text, color_t color,
+                          std::string font, int size,
+                          float rotation)
+{
+  pixel_t currentX = x;
+  pixel_t currentY = y;
+
+  // Simplistic rotation handling
+  double radians = rotation * (M_PI / 180.0); // Convert degrees to radians
+  double charWidth = size; // Assuming a fixed width for simplicity
+
+  for (char c : text) {
+    // Draw the character at currentX, y
+    drawChar(currentX, currentY, c, color, font, size, rotation);
+
+    if (rotation != 0.0) {
+          // Handle rotation
+          currentX += charWidth * cos(radians);
+          currentY += charWidth * sin(radians);
+    } else {
+          // No rotation, so just advance by the character width
+          currentX += size;
+    }
+    if (currentX >= controlBlock.widthInWordsMinusOne) {
+      // Stop drawing if we reached the end of the sprite
+      break;
+    }
+    if (c == '\r') {
+      // Carriage return
+      currentX = x;
+      currentY += size;
+    }
+  }
+
+  return 0;
+}
+
+
+// Draw an image in the sprite image data
+/*
+int AcornSprite::drawImage(pixel_t x, pixel_t y,
+                           const AcornSprite& image)
+{
+  // Draw the image
+  for (uint32_t i = 0; i < image.getWidth(); i++)
+  {
+    for (uint32_t j = 0; j < image.getHeight(); j++)
+    {
+      setPixel(x + i, y + j, image.getPixel(i, j));
+    }
+  }
+
+  return 0;
+}
+*/
+
+// Get the width of the sprite
+uint32_t AcornSprite::getWidth() const
+{
+  return this->controlBlock.widthInWordsMinusOne;
+}
+
+// Set the width of the sprite
+void AcornSprite::setWidth(uint32_t width)
+{
+  this->controlBlock.widthInWordsMinusOne = width;
+}
+
+// Get the height of the sprite
+uint32_t AcornSprite::getHeight() const
+{
+  return this->controlBlock.heightInScanlines;
+}
+
+// Set the height of the sprite
+void AcornSprite::setHeight(uint32_t height)
+{
+  this->controlBlock.heightInScanlines = height;
+}
+
+// Get the mode of the sprite
+uint32_t AcornSprite::getMode() const
+{
+  return this->controlBlock.mode;
+}
+
+// Set the mode of the sprite
+void AcornSprite::setMode(uint32_t mode)
+{
+  this->controlBlock.mode = mode;
+}
+
+// Get the next sprite offset
+uint32_t AcornSprite::getNextSpriteOffset() const
+{
+  return this->controlBlock.nextSpriteOffset;
+}
+
+// Set the next sprite offset
+void AcornSprite::setNextSpriteOffset(uint32_t nextSpriteOffset)
+{
+  this->controlBlock.nextSpriteOffset = nextSpriteOffset;
+}
+
+// Set the control block of the sprite
+void AcornSprite::setControlBlock(const AcornSprite::SpriteControlBlock& controlBlock)
+{
+  this->controlBlock = controlBlock;
+}
+
+// Get the control block of the sprite
+const AcornSprite::SpriteControlBlock& AcornSprite::getControlBlock() const  {
+  return controlBlock;
+}
