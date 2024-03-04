@@ -18,8 +18,8 @@
  *      please refer to the official license documentation.
  */
 
-#include <stdexcept>
-#include <memory> // For std::shared_ptr
+#ifndef SCREENINFO_HPP
+#define SCREENINFO_HPP
 
 // Include MicroFB libraries
 #include "common.h"
@@ -27,8 +27,16 @@
 // Include my own C++ STDLib extras for compatibility with older GCC versions
 //#include "stdlib_extras.h"
 #endif
-#include "mem_manager.h"
-#include "layer.h"
-#include "render_strategy.h"
 
+class ScreenInfo {
+  public:
+    virtual ~ScreenInfo() {}
 
+    // Pure virtual methods to be implemented by derived classes for specific platforms
+    virtual pixel_t getScreenWidth() const = 0;
+    virtual pixel_t getScreenHeight() const = 0;
+    virtual unsigned int getBitsPerPixel() const = 0;
+
+};
+
+#endif // SCREENINFO_HPP

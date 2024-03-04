@@ -25,11 +25,15 @@
 #include <vector>
 #include <cstdint> // For pixel_t and color_t types
 
+// Include MicroFB libraries
+#include "common.h"
+#if GCC_VERSION < 50000
+// Include my own C++ STDLib extras for compatibility with older GCC versions
+//#include "stdlib_extras.h"
+#endif
+
 // Forward declaration of Layer to resolve circular dependency
 class Layer;
-
-typedef uint32_t color_t; // 32-bit color, assuming it represents ARGB or similar
-typedef uint32_t pixel_t; // 32-bit pixel, for dimensions
 
 class RenderStrategy
 {

@@ -272,9 +272,10 @@
 #define GCC_VERSION 1000000000
 #endif
 
+// Common declarations
 
-
-
+typedef unsigned int pixel_t;
+typedef unsigned int color_t;
 
 #endif // COMMON_H
 // src/h/common

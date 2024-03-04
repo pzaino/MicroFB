@@ -34,9 +34,6 @@
 #include "mem_manager.h"
 #include "render_strategy.h"
 
-typedef uint32_t color_t; // 32-bit color
-typedef uint32_t pixel_t; // 32-bit pixel, assuming it represents dimensions
-
 class Layer
 {
   private:
