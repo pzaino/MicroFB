@@ -20,5 +20,9 @@ cd ${current_dir}
 # Display MakefielGCC
 cat ${current_dir}/MakeFileGCC
 
+# clean artifacts
+rm ./*.o
+rm ./*.a
+
 # Make the artifacts
-make static OS=`uname -s` -f ${current_dir}/MakefileGCC
+make all OS=`uname -s` -f ${current_dir}/MakefileGCC
