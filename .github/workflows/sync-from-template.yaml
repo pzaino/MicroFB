@@ -34,6 +34,9 @@ env:
   REPO_TEMPLATE: RISC-OS-Community/StandardRepoTemplate
   THIS_REPO: ${{ github.repository }}
 
+permissions:
+  contents: read
+
 jobs:
   sync-from-template:
     # Do not run on the template repository itself
@@ -50,8 +53,13 @@ jobs:
 
     steps:
       # Clone the template repository
+      - name: Harden Runner
+        uses: step-security/harden-runner@0d381219ddf674d61a7572ddd19d7941e271515c # v2.9.0
+        with:
+          egress-policy: audit
+
       - name: Check out template repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2.7.0
         with:
           repository: ${{ env.REPO_TEMPLATE }}
           token: ${{ github.token }}
@@ -65,7 +73,7 @@ jobs:
 
       # Clone the target repository. Check out a branch
       - name: Check out ${{ github.repository }}
-        uses: actions/checkout@v2
+        uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2.7.0
         with:
           repository: ${{ github.repository }}
           token: ${{ github.token }}
