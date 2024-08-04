@@ -25,6 +25,9 @@ on:
 env:
   THIS_REPO: ${{ github.repository }}
 
+permissions:
+  contents: read
+
 jobs:
 #  init:
 #    runs-on: ubuntu-latest
@@ -42,10 +45,15 @@ jobs:
   tweet:
     runs-on: ubuntu-latest
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@0d381219ddf674d61a7572ddd19d7941e271515c # v2.9.0
+        with:
+          egress-policy: audit
+
       - name: Set current date as env variable
         run: echo "MSG_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
       - name: Send Tweet
-        uses: ethomson/send-tweet-action@v1
+        uses: ethomson/send-tweet-action@288f9339e0412e3038dce350e0da5ecdf12133a6 # v1.0.0
         with:
           status: "🎉 Today: ${{ env.MSG_DATE }}, new merge in ${{ env.THIS_REPO }}! ${{ github.event.pull_request.title }} You can check it out here: https://github.com/${{ env.THIS_REPO }} #RISC_OS #RISCOS #ROCOnGitHub #OpenSource #DevCommunity" 
           consumer-key: ${{ secrets.TWITTER_CONSUMER_API_KEY }}
